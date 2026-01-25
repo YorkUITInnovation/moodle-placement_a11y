@@ -109,29 +109,49 @@ class utils {
             }
         }
 
-        // Check for headings (structure issue).
-        $h1s = $xpath->query('//h1');
-        if ($h1s->length === 0) {
-            $issues[] = [
-                'type' => 'missing_h1',
-                'element' => 'h1',
-                'severity' => 'medium',
-                'description' => 'Content should have at least one H1 heading',
-            ];
-        }
 
-        // Check for text that might have contrast issues (we flag all-caps text).
-        $paragraphs = $xpath->query('//p | //span | //div');
-        foreach ($paragraphs as $elem) {
+        // Check for color contrast issues.
+        $elements_with_style = $xpath->query('//*[@style]');
+        foreach ($elements_with_style as $elem) {
+            $style = $elem->getAttribute('style');
             $text = trim($elem->textContent);
-            if (!empty($text) && strlen($text) > 20 && $text === strtoupper($text)) {
-                $issues[] = [
-                    'type' => 'potential_contrast_issue',
-                    'element' => $elem->nodeName,
-                    'severity' => 'low',
-                    'description' => 'Text in all caps may have contrast issues. Check styling.',
-                ];
-                break; // Only report once.
+
+            // Only check elements with text content.
+            if (empty($text)) {
+                continue;
+            }
+
+            // Extract color and background-color from inline styles.
+            $color = $this->extract_color_from_style($style, 'color');
+            $bgcolor = $this->extract_color_from_style($style, 'background-color');
+
+            // If no background color is set in inline style, assume white background (common default).
+            if ($bgcolor === null) {
+                $bgcolor = '#FFFFFF';
+            }
+
+            // If color is set, check contrast.
+            if ($color !== null) {
+                $contrast_ratio = $this->calculate_contrast_ratio($color, $bgcolor);
+
+                // WCAG AA requires 4.5:1 for normal text, 3:1 for large text.
+                // We'll use 4.5:1 as the threshold.
+                if ($contrast_ratio < 4.5) {
+                    $issues[] = [
+                        'type' => 'contrast_issue',
+                        'element' => $elem->nodeName,
+                        'severity' => 'high',
+                        'color' => $color,
+                        'background' => $bgcolor,
+                        'contrast_ratio' => round($contrast_ratio, 2),
+                        'description' => sprintf(
+                            'Insufficient color contrast (%.2f:1, needs 4.5:1). Color: %s on %s',
+                            $contrast_ratio,
+                            $color,
+                            $bgcolor
+                        ),
+                    ];
+                }
             }
         }
 
@@ -183,10 +203,9 @@ I have HTML content that needs to be fixed to meet WCAG AA standards. Please ana
 
 1. Add missing alt text to all images (meaningful descriptions)
 2. Improve weak link text to be more descriptive
-3. Add missing H1 heading if needed
-4. Suggest improvements for potential contrast issues
-5. Add labels to form inputs
-6. Ensure proper heading hierarchy
+3. Suggest improvements for potential contrast issues
+4. Add labels to form inputs
+5. Ensure proper heading hierarchy
 
 {$issue_summary}
 
@@ -207,6 +226,121 @@ Fixed HTML (complete):
 PROMPT;
 
         return $prompt;
+    }
+
+    /**
+     * Extract color value from inline style attribute.
+     *
+     * @param string $style The style attribute value.
+     * @param string $property The CSS property to extract (e.g., 'color', 'background-color').
+     * @return string|null The color value or null if not found.
+     */
+    private function extract_color_from_style(string $style, string $property): ?string {
+        // Match property: value; patterns.
+        $pattern = '/' . preg_quote($property, '/') . '\s*:\s*([^;]+)/i';
+        if (preg_match($pattern, $style, $matches)) {
+            return trim($matches[1]);
+        }
+        return null;
+    }
+
+    /**
+     * Convert color to RGB array.
+     *
+     * @param string $color Color in hex (#RGB or #RRGGBB) or rgb() format.
+     * @return array|null Array with 'r', 'g', 'b' keys or null if invalid.
+     */
+    private function color_to_rgb(string $color): ?array {
+        $color = trim($color);
+
+        // Handle hex colors.
+        if (preg_match('/^#([0-9a-f]{3}|[0-9a-f]{6})$/i', $color, $matches)) {
+            $hex = $matches[1];
+
+            // Convert 3-digit to 6-digit hex.
+            if (strlen($hex) === 3) {
+                $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+            }
+
+            return [
+                'r' => hexdec(substr($hex, 0, 2)),
+                'g' => hexdec(substr($hex, 2, 2)),
+                'b' => hexdec(substr($hex, 4, 2)),
+            ];
+        }
+
+        // Handle rgb() format.
+        if (preg_match('/rgb\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/i', $color, $matches)) {
+            return [
+                'r' => (int)$matches[1],
+                'g' => (int)$matches[2],
+                'b' => (int)$matches[3],
+            ];
+        }
+
+        // Handle common color names.
+        $color_names = [
+            'white' => '#FFFFFF',
+            'black' => '#000000',
+            'red' => '#FF0000',
+            'green' => '#008000',
+            'blue' => '#0000FF',
+            'yellow' => '#FFFF00',
+            'gray' => '#808080',
+            'grey' => '#808080',
+        ];
+
+        $lower_color = strtolower($color);
+        if (isset($color_names[$lower_color])) {
+            return $this->color_to_rgb($color_names[$lower_color]);
+        }
+
+        return null;
+    }
+
+    /**
+     * Calculate relative luminance for a color.
+     *
+     * @param array $rgb Array with 'r', 'g', 'b' keys (0-255).
+     * @return float Relative luminance (0-1).
+     */
+    private function get_relative_luminance(array $rgb): float {
+        // Convert to 0-1 range and apply sRGB gamma correction.
+        $r = $rgb['r'] / 255;
+        $g = $rgb['g'] / 255;
+        $b = $rgb['b'] / 255;
+
+        $r = ($r <= 0.03928) ? $r / 12.92 : pow(($r + 0.055) / 1.055, 2.4);
+        $g = ($g <= 0.03928) ? $g / 12.92 : pow(($g + 0.055) / 1.055, 2.4);
+        $b = ($b <= 0.03928) ? $b / 12.92 : pow(($b + 0.055) / 1.055, 2.4);
+
+        return 0.2126 * $r + 0.7152 * $g + 0.0722 * $b;
+    }
+
+    /**
+     * Calculate contrast ratio between two colors.
+     *
+     * @param string $color1 First color.
+     * @param string $color2 Second color.
+     * @return float Contrast ratio (1-21).
+     */
+    private function calculate_contrast_ratio(string $color1, string $color2): float {
+        $rgb1 = $this->color_to_rgb($color1);
+        $rgb2 = $this->color_to_rgb($color2);
+
+        if ($rgb1 === null || $rgb2 === null) {
+            return 21; // Return passing ratio if we can't parse colors.
+        }
+
+        $l1 = $this->get_relative_luminance($rgb1);
+        $l2 = $this->get_relative_luminance($rgb2);
+
+        // Ensure L1 is the lighter color.
+        if ($l2 > $l1) {
+            [$l1, $l2] = [$l2, $l1];
+        }
+
+        return ($l1 + 0.05) / ($l2 + 0.05);
     }
 
     /**
