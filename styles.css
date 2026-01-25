@@ -1,0 +1,379 @@
+/**
+ * Styles for accessibility fixer placement.
+ *
+ * @package    aiplacement_a11y
+ * @copyright  2026 Accessibility Team
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+/* Loading Dialog */
+.a11y-dialog-loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+}
+
+.a11y-loading {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.a11y-loading .spinner {
+    width: 40px;
+    height: 40px;
+    margin: 0 auto 1rem;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Results Container */
+.a11y-results {
+    padding: 1rem;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* Summary Section */
+.a11y-summary {
+    background: #f8f9fa;
+    border-left: 4px solid #3498db;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    border-radius: 4px;
+}
+
+.a11y-summary p {
+    margin: 0.5rem 0;
+}
+
+.a11y-summary strong {
+    color: #2c3e50;
+}
+
+/* Report Section */
+.a11y-report {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    border-radius: 4px;
+}
+
+.a11y-report h3 {
+    margin-top: 0;
+    color: #2c3e50;
+    font-size: 1.1rem;
+}
+
+.a11y-report ul {
+    margin: 1rem 0;
+    padding-left: 1.5rem;
+}
+
+.a11y-report li {
+    margin: 0.5rem 0;
+    line-height: 1.5;
+}
+
+/* Severity Levels */
+.severity-high {
+    color: #c0392b;
+    background: #fadbd8;
+    padding: 0.25rem 0.5rem;
+    border-radius: 3px;
+    display: inline-block;
+    margin: 0.25rem 0;
+}
+
+.severity-medium {
+    color: #d68910;
+    background: #fdebd0;
+    padding: 0.25rem 0.5rem;
+    border-radius: 3px;
+    display: inline-block;
+    margin: 0.25rem 0;
+}
+
+.severity-low {
+    color: #5d6d7b;
+    background: #ecf0f1;
+    padding: 0.25rem 0.5rem;
+    border-radius: 3px;
+    display: inline-block;
+    margin: 0.25rem 0;
+}
+
+/* Comparison Section */
+.a11y-comparison {
+    background: #f8f9fa;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    border-radius: 4px;
+}
+
+.a11y-comparison button {
+    background: none;
+    border: none;
+    color: #3498db;
+    cursor: pointer;
+    text-decoration: underline;
+    padding: 0;
+    font-size: 1rem;
+}
+
+.a11y-comparison button:hover {
+    color: #2980b9;
+}
+
+.comparison-content {
+    margin-top: 1rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.comparison-content.hidden {
+    display: none;
+}
+
+.comparison-original,
+.comparison-fixed {
+    border: 1px solid #ddd;
+    background: white;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.comparison-original h4,
+.comparison-fixed h4 {
+    background: #ecf0f1;
+    margin: 0;
+    padding: 0.75rem;
+    font-size: 0.95rem;
+    color: #2c3e50;
+}
+
+.comparison-original pre,
+.comparison-fixed pre {
+    margin: 0;
+    padding: 0.75rem;
+    font-size: 0.85rem;
+    overflow-x: auto;
+    background: white;
+    color: #333;
+    max-height: 300px;
+}
+
+/* Changes List */
+.a11y-changes {
+    background: #e8f8f5;
+    border-left: 4px solid #27ae60;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    border-radius: 4px;
+}
+
+.a11y-changes h4 {
+    color: #27ae60;
+    margin-top: 0;
+    font-size: 1rem;
+}
+
+.a11y-changes ul {
+    margin: 1rem 0;
+    padding-left: 1.5rem;
+    list-style: none;
+}
+
+.a11y-changes li {
+    margin: 0.5rem 0;
+    padding-left: 1.5rem;
+    position: relative;
+    color: #27ae60;
+}
+
+.a11y-changes li:before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    font-weight: bold;
+}
+
+/* Action Buttons */
+.a11y-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #ecf0f1;
+}
+
+.a11y-actions button {
+    padding: 0.5rem 1.5rem;
+    font-size: 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.a11y-actions .btn-primary {
+    background: #3498db;
+    color: white;
+}
+
+.a11y-actions .btn-primary:hover {
+    background: #2980b9;
+}
+
+.a11y-actions .btn-secondary {
+    background: #95a5a6;
+    color: white;
+}
+
+.a11y-actions .btn-secondary:hover {
+    background: #7f8c8d;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .comparison-content {
+        grid-template-columns: 1fr;
+    }
+
+    .a11y-actions {
+        flex-direction: column;
+    }
+
+    .a11y-actions button {
+        width: 100%;
+    }
+
+    .a11y-results {
+        padding: 0.5rem;
+    }
+
+    .comparison-original pre,
+    .comparison-fixed pre {
+        font-size: 0.75rem;
+        max-height: 200px;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .a11y-dialog-loading,
+    .a11y-actions button {
+        display: none !important;
+    }
+
+    .a11y-results {
+        box-shadow: none;
+        border: 1px solid #ccc;
+    }
+}
+
+/* Accessibility Fixes */
+.a11y-actions button:focus,
+.a11y-comparison button:focus {
+    outline: 2px solid #3498db;
+    outline-offset: 2px;
+}
+
+.a11y-summary,
+.a11y-report,
+.a11y-comparison,
+.a11y-changes,
+.comparison-original,
+.comparison-fixed {
+    margin-bottom: 1.5rem;
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    .a11y-results {
+        color: #e0e0e0;
+    }
+
+    .a11y-summary,
+    .a11y-comparison {
+        background: #2c3e50;
+        border-color: #34495e;
+    }
+
+    .a11y-summary p,
+    .a11y-summary strong {
+        color: #ecf0f1;
+    }
+
+    .a11y-report {
+        background: #34495e;
+        border-color: #7f8c8d;
+        color: #ecf0f1;
+    }
+
+    .a11y-report h3 {
+        color: #ecf0f1;
+    }
+
+    .comparison-original h4,
+    .comparison-fixed h4 {
+        background: #34495e;
+        color: #ecf0f1;
+    }
+
+    .comparison-original pre,
+    .comparison-fixed pre {
+        background: #2c3e50;
+        color: #ecf0f1;
+    }
+
+    .a11y-changes {
+        background: #1a3a3a;
+        border-color: #27ae60;
+    }
+
+    .a11y-changes h4,
+    .a11y-changes li {
+        color: #2ecc71;
+    }
+
+    .comparison-content {
+        border-color: #7f8c8d;
+    }
+
+    .a11y-dialog-loading {
+        background: rgba(0, 0, 0, 0.8);
+    }
+
+    .a11y-loading {
+        background: #34495e;
+        color: #ecf0f1;
+    }
+
+    .a11y-loading .spinner {
+        border-color: #7f8c8d;
+        border-top-color: #3498db;
+    }
+}
