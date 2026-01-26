@@ -148,7 +148,20 @@ class fix_accessibility extends external_api {
 
             // Get the detailed report of changes.
             $changes = $utils->identify_changes($htmlcontent, $fixed_content);
-            $detailed_report = $utils->generate_report($analysis, $changes);
+
+            // Render the full results using template
+            global $OUTPUT;
+            $template_context = [
+                'issues_found' => count($analysis['issues']),
+                'has_issues' => true,
+                'status_message' => get_string('issuesfound', 'aiplacement_a11y', count($analysis['issues'])),
+                'analysis_report' => $utils->generate_report($analysis, $changes),
+                'original_content' => $htmlcontent,
+                'fixed_content' => $fixed_content,
+                'changes' => $changes,
+            ];
+
+            $detailed_report = $OUTPUT->render_from_template('aiplacement_a11y/fix_accessibility_results', $template_context);
 
             return [
                 'success' => true,

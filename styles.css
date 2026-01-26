@@ -47,16 +47,27 @@
     }
 }
 
-/* Results Container */
+/* Results Container - Force white background to override modal dark backgrounds */
 .a11y-results {
-    padding: 1rem;
+    padding: 1rem !important;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: #ffffff !important; /* Force white background */
+    background-color: #ffffff !important;
+    color: #212529 !important; /* Dark text */
+}
+
+/* Fallback for when white background doesn't apply - use light text */
+@supports not (background: #ffffff !important) {
+    .a11y-results {
+        color: #ffffff !important;
+    }
 }
 
 /* Summary Section */
 .a11y-summary {
-    background: #f8f9fa;
-    border-left: 4px solid #3498db;
+    background: #e7f3ff !important; /* Light blue background */
+    background-color: #e7f3ff !important;
+    border-left: 4px solid #0d6efd; /* Bootstrap blue */
     padding: 1rem;
     margin-bottom: 1.5rem;
     border-radius: 4px;
@@ -64,25 +75,35 @@
 
 .a11y-summary p {
     margin: 0.5rem 0;
+    color: #212529 !important; /* Dark text */
 }
 
 .a11y-summary strong {
-    color: #2c3e50;
+    color: #212529 !important; /* Dark text */
+    font-weight: 600;
 }
 
 /* Report Section */
 .a11y-report {
-    background: #fff;
-    border: 1px solid #e0e0e0;
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    border: 1px solid #dee2e6;
     padding: 1rem;
     margin-bottom: 1.5rem;
     border-radius: 4px;
+    color: #212529 !important;
 }
 
 .a11y-report h3 {
     margin-top: 0;
-    color: #2c3e50;
+    color: #212529 !important;
     font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.a11y-report h4 {
+    color: #212529 !important;
+    font-weight: 600;
 }
 
 .a11y-report ul {
@@ -93,6 +114,7 @@
 .a11y-report li {
     margin: 0.5rem 0;
     line-height: 1.5;
+    color: #212529 !important;
 }
 
 /* Severity Levels */
@@ -125,13 +147,210 @@
 
 /* Comparison Section */
 .a11y-comparison {
-    background: #f8f9fa;
-    padding: 1rem;
+    background: #ffffff !important; /* Force white background */
+    background-color: #ffffff !important;
+    padding: 1rem !important;
     margin-bottom: 1.5rem;
     border-radius: 4px;
 }
 
-.a11y-comparison button {
+/* Override Bootstrap tabs to ensure readability */
+.a11y-comparison .nav-tabs {
+    margin-bottom: 0;
+    background: #ffffff !important; /* White background for tabs */
+    background-color: #ffffff !important;
+    border-bottom: 2px solid #dee2e6;
+    padding: 0.5rem 0.5rem 0;
+}
+
+.a11y-comparison .nav-tabs .nav-link {
+    color: #495057 !important; /* Dark grey text */
+    background: transparent !important;
+    border: 1px solid transparent !important;
+    border-radius: 0.25rem 0.25rem 0 0;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+}
+
+.a11y-comparison .nav-tabs .nav-link:hover {
+    color: #0d6efd !important;
+    background: #f8f9fa !important;
+    border-color: transparent !important;
+}
+
+.a11y-comparison .nav-tabs .nav-link.active {
+    color: #0d6efd !important; /* Bootstrap blue */
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    border-color: #dee2e6 #dee2e6 #ffffff !important;
+    border-bottom: 2px solid #ffffff !important;
+    font-weight: 600;
+}
+
+/* Tab content area */
+.a11y-comparison .tab-content {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    padding: 1rem;
+    border: 1px solid #dee2e6;
+    border-top: none;
+    border-radius: 0 0 0.25rem 0.25rem;
+}
+
+/* Rendered HTML Comparison */
+.a11y-rendered-comparison {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.rendered-original,
+.rendered-fixed {
+    border: 1px solid #ddd;
+    background: white !important;
+    background-color: #ffffff !important;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+/* Add subtle visual cue for original (left side) */
+.rendered-original {
+    border-left: 3px solid #f0ad4e; /* Orange accent for original */
+}
+
+/* Add subtle visual cue for fixed (right side) */
+.rendered-fixed {
+    border-left: 3px solid #5cb85c; /* Green accent for fixed */
+}
+
+.rendered-original h4,
+.rendered-fixed h4 {
+    background: #ecf0f1 !important;
+    background-color: #ecf0f1 !important;
+    margin: 0;
+    padding: 0.75rem;
+    font-size: 0.95rem;
+    color: #2c3e50 !important;
+    font-weight: 600;
+}
+
+.rendered-html-preview {
+    padding: 1rem;
+    min-height: 200px;
+    max-height: 400px;
+    overflow-y: auto;
+    background: white !important;
+    background-color: #ffffff !important;
+    color: #212529 !important; /* Dark text for readability */
+    font-size: 1rem;
+    line-height: 1.5;
+}
+
+/* Ensure all content in preview has proper contrast */
+.rendered-html-preview * {
+    color: inherit !important;
+}
+
+/* Override any light grey text that might be inherited */
+.rendered-html-preview p,
+.rendered-html-preview div,
+.rendered-html-preview span,
+.rendered-html-preview li {
+    color: #212529 !important;
+}
+
+/* Preserve link colors */
+.rendered-html-preview a {
+    color: #0d6efd !important;
+    text-decoration: underline;
+}
+
+.rendered-html-preview a:hover {
+    color: #0a58ca !important;
+}
+
+/* Code View Comparison */
+.a11y-code-comparison {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    min-height: 350px; /* Ensure adequate height */
+}
+
+.code-original,
+.code-fixed {
+    border: 1px solid #ddd;
+    background: white !important;
+    background-color: #ffffff !important;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+/* Add subtle visual cue for original (left side) */
+.code-original {
+    border-left: 3px solid #f0ad4e; /* Orange accent for original */
+}
+
+/* Add subtle visual cue for fixed (right side) */
+.code-fixed {
+    border-left: 3px solid #5cb85c; /* Green accent for fixed */
+}
+
+.code-original h4,
+.code-fixed h4 {
+    background: #ecf0f1 !important;
+    background-color: #ecf0f1 !important;
+    margin: 0;
+    padding: 0.75rem;
+    font-size: 0.95rem;
+    color: #2c3e50 !important;
+    font-weight: 600;
+}
+
+.code-original pre,
+.code-fixed pre {
+    margin: 0;
+    padding: 0.75rem;
+    font-size: 0.85rem;
+    overflow-x: auto;
+    background: white !important;
+    background-color: #ffffff !important;
+    color: #212529 !important; /* Dark text for better readability */
+    min-height: 300px; /* Minimum height */
+    max-height: 600px; /* Increased from 400px to 600px */
+    overflow-y: auto; /* Enable vertical scrolling */
+    line-height: 1.4;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
+    white-space: pre-wrap; /* Allow text wrapping */
+    word-wrap: break-word; /* Break long words if needed */
+}
+
+/* Scrollbar styling for better visibility */
+.code-original pre::-webkit-scrollbar,
+.code-fixed pre::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+.code-original pre::-webkit-scrollbar-track,
+.code-fixed pre::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.code-original pre::-webkit-scrollbar-thumb,
+.code-fixed pre::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.code-original pre::-webkit-scrollbar-thumb:hover,
+.code-fixed pre::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Legacy comparison styles (removed, replaced by tabs) */
+.a11y-comparison button[data-toggle="comparison"] {
     background: none;
     border: none;
     color: #3498db;
@@ -141,9 +360,6 @@
     font-size: 1rem;
 }
 
-.a11y-comparison button:hover {
-    color: #2980b9;
-}
 
 .comparison-content {
     margin-top: 1rem;

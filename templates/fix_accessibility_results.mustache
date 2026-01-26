@@ -1,0 +1,147 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template aiplacement_a11y/fix_accessibility_results
+
+    Accessibility fix results display with tabbed interface.
+
+    Classes required for JS:
+    * none
+
+    Data attributes required for JS:
+    * data-tab
+    * data-panel
+    * data-action
+
+    Context variables required for this template:
+    * issues_found - Number of issues found
+    * has_issues - Boolean indicating if issues were found
+    * status_message - Status message to display
+    * analysis_report - HTML analysis report
+    * original_content - Original HTML content
+    * fixed_content - Fixed HTML content
+    * changes - Array of changes made
+
+    Example context (json):
+    {
+        "issues_found": 3,
+        "has_issues": true,
+        "status_message": "Issues were found and fixed",
+        "analysis_report": "<ul><li>Missing alt text</li></ul>",
+        "original_content": "<img src='test.jpg'>",
+        "fixed_content": "<img src='test.jpg' alt='Description'>",
+        "changes": [
+            {"before": "Image without alt", "after": "Image with alt text"}
+        ]
+    }
+}}
+<div class="a11y-results">
+    <div class="a11y-summary">
+        <p><strong>{{#str}}issuesfound, aiplacement_a11y, {{issues_found}}{{/str}}</strong></p>
+        <p><strong>{{#str}}status, aiplacement_a11y{{/str}}:</strong> {{status_message}}</p>
+    </div>
+
+    {{#analysis_report}}
+    <div class="a11y-report">
+        {{{analysis_report}}}
+    </div>
+    {{/analysis_report}}
+
+    {{#has_issues}}
+    <div class="a11y-comparison">
+        {{! Bootstrap 5 Nav Tabs }}
+        <ul class="nav nav-tabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active"
+                        id="view-html-tab"
+                        data-bs-toggle="tab"
+                        data-bs-target="#view-html"
+                        type="button"
+                        role="tab"
+                        aria-controls="view-html"
+                        aria-selected="true">
+                    {{#str}}viewhtml, aiplacement_a11y{{/str}}
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link"
+                        id="view-code-tab"
+                        data-bs-toggle="tab"
+                        data-bs-target="#view-code"
+                        type="button"
+                        role="tab"
+                        aria-controls="view-code"
+                        aria-selected="false">
+                    {{#str}}viewcode, aiplacement_a11y{{/str}}
+                </button>
+            </li>
+        </ul>
+
+        {{! Bootstrap 5 Tab Content }}
+        <div class="tab-content mt-3">
+            {{! View HTML tab (rendered, active by default) }}
+            <div class="tab-pane fade show active"
+                 id="view-html"
+                 role="tabpanel"
+                 aria-labelledby="view-html-tab">
+                <div class="a11y-rendered-comparison">
+                    <div class="rendered-original">
+                        <h4>{{#str}}original, aiplacement_a11y{{/str}}</h4>
+                        <div class="rendered-html-preview">
+                            {{{original_content}}}
+                        </div>
+                    </div>
+                    <div class="rendered-fixed">
+                        <h4>{{#str}}fixed, aiplacement_a11y{{/str}}</h4>
+                        <div class="rendered-html-preview">
+                            {{{fixed_content}}}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{! View Code tab (HTML source) }}
+            <div class="tab-pane fade"
+                 id="view-code"
+                 role="tabpanel"
+                 aria-labelledby="view-code-tab">
+                <div class="a11y-code-comparison">
+                    <div class="code-original">
+                        <h4>{{#str}}original, aiplacement_a11y{{/str}}</h4>
+                        <pre>{{original_content}}</pre>
+                    </div>
+                    <div class="code-fixed">
+                        <h4>{{#str}}fixed, aiplacement_a11y{{/str}}</h4>
+                        <pre>{{fixed_content}}</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{#changes}}
+    <div class="a11y-changes">
+        <h4>{{#str}}changesfixed, aiplacement_a11y{{/str}}</h4>
+        <ul>
+            {{#changes}}
+            <li>{{{before}}} → {{{after}}}</li>
+            {{/changes}}
+        </ul>
+    </div>
+    {{/changes}}
+    {{/has_issues}}
+</div>

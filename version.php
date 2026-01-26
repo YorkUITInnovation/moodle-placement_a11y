@@ -26,7 +26,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'aiplacement_a11y';
-$plugin->version = 2026012501;
+$plugin->version = 2026012511;
 $plugin->requires = 2025092600;
 $plugin->maturity = MATURITY_ALPHA;
-$plugin->release = '1.0.0';
+$plugin->release = '1.2.1';

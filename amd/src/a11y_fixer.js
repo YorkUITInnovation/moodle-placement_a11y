@@ -11,6 +11,7 @@ import {call as fetchMany} from 'core/ajax';
 import {get_string as getString} from 'core/str';
 import Notification from 'core/notification';
 import ModalFactory from 'core/modal_factory';
+import Templates from 'core/templates';
 
 /**
  * Accessibility Fixer integration for TinyMCE editor.
@@ -147,7 +148,7 @@ export class A11yFixer {
      * @param {Object} result The API response result
      */
     static async showResultsDialog(result) {
-        const htmlContent = this.buildResultsHtml(result);
+        const htmlContent = await this.buildResultsHtml(result);
 
         const modal = await ModalFactory.create({
             type: ModalFactory.types.LARGE,
@@ -163,8 +164,6 @@ export class A11yFixer {
                     modal.hide();
                 } else if (e.target.matches('[data-action="reject-changes"]')) {
                     modal.hide();
-                } else if (e.target.matches('[data-toggle="comparison"]')) {
-                    this.toggleComparison(e.target);
                 }
             });
         });
@@ -173,92 +172,51 @@ export class A11yFixer {
     }
 
     /**
-     * Build HTML for the results dialog.
+     * Build HTML for the results dialog using Mustache template.
      *
      * @private
      * @param {Object} result The API response result
-     * @return {string} HTML content for the dialog
+     * @return {Promise<string>} Promise resolving to HTML content for the dialog
      */
-    static buildResultsHtml(result) {
-        let html = '<div class="a11y-results">';
+    static async buildResultsHtml(result) {
+        // Debug: Log that we're using the tabbed version
+        console.log('A11y Fixer v1.1.0 - Bootstrap 5 tabs', result);
 
-        // Summary section.
-        html += '<div class="a11y-summary">';
-        html += `<p><strong>Issues Found:</strong> ${result.issues_found}</p>`;
-        html += `<p><strong>Status:</strong> ${result.has_issues ? 'Issues were found and fixed' : 'No issues found'}</p>`;
-        html += '</div>';
+        // Prepare context for template
+        const context = {
+            issues_found: result.issues_found,
+            has_issues: result.has_issues,
+            status_message: result.has_issues ?
+                'Issues were found and fixed' :
+                'No issues found',
+            analysis_report: result.analysis_report || '',
+            original_content: result.original_content || '',
+            fixed_content: result.fixed_content || '',
+            changes: []
+        };
 
-        // Analysis report.
-        if (result.analysis_report) {
-            html += '<div class="a11y-report">';
-            html += result.analysis_report;
-            html += '</div>';
-        }
-
-        // Comparison view.
-        if (result.has_issues) {
-            html += '<div class="a11y-comparison">';
-            html += '<button type="button" data-toggle="comparison" class="btn btn-link">';
-            html += 'Show Original vs. Fixed Comparison';
-            html += '</button>';
-
-            html += '<div class="comparison-content hidden">';
-            html += '<div class="comparison-original">';
-            html += '<h4>Original</h4>';
-            html += '<pre>' + this.escapeHtml(result.original_content) + '</pre>';
-            html += '</div>';
-
-            html += '<div class="comparison-fixed">';
-            html += '<h4>Fixed</h4>';
-            html += '<pre>' + this.escapeHtml(result.fixed_content) + '</pre>';
-            html += '</div>';
-            html += '</div>';
-            html += '</div>';
-
-            // Changes list.
-            if (result.changes_made && result.changes_made.length > 0) {
-                const changes = JSON.parse(result.changes_made);
-                html += '<div class="a11y-changes">';
-                html += '<h4>Changes Made</h4>';
-                html += '<ul>';
-                changes.forEach((change) => {
-                    html += `<li>${change.before} → ${change.after}</li>`;
-                });
-                html += '</ul>';
-                html += '</div>';
+        // Parse changes if available
+        if (result.changes_made && result.changes_made.length > 0) {
+            try {
+                context.changes = JSON.parse(result.changes_made);
+            } catch (e) {
+                console.error('Failed to parse changes:', e);
             }
-
-            // Action buttons.
-            html += '<div class="a11y-actions">';
-            html += '<button type="button" data-action="accept-changes" class="btn btn-primary">';
-            html += 'Accept Changes';
-            html += '</button>';
-            html += '<button type="button" data-action="reject-changes" class="btn btn-secondary">';
-            html += 'Reject Changes';
-            html += '</button>';
-            html += '</div>';
         }
 
-        html += '</div>';
+        console.log('Template context:', context);
+        console.log('Calling Templates.render with template: aiplacement_a11y/fix_accessibility_results');
+
+        // Render template
+        const html = await Templates.render('aiplacement_a11y/fix_accessibility_results', context);
+
+        console.log('Template rendered HTML (first 500 chars):', html.substring(0, 500));
+        console.log('Check for Bootstrap tabs in HTML:', html.includes('nav nav-tabs') ? 'YES ✓' : 'NO ✗');
+        console.log('Check for data-bs-toggle:', html.includes('data-bs-toggle') ? 'YES ✓' : 'NO ✗');
 
         return html;
     }
 
-    /**
-     * Toggle the comparison view.
-     *
-     * @private
-     * @param {Element} button The toggle button
-     */
-    static toggleComparison(button) {
-        const content = button.nextElementSibling;
-        if (content) {
-            content.classList.toggle('hidden');
-            button.textContent = content.classList.contains('hidden')
-                ? 'Show Original vs. Fixed Comparison'
-                : 'Hide Comparison';
-        }
-    }
 
     /**
      * Accept the fixed content and update editor.
@@ -275,23 +233,6 @@ export class A11yFixer {
         });
     }
 
-    /**
-     * Escape HTML for safe display in pre tag.
-     *
-     * @private
-     * @param {string} text Text to escape
-     * @return {string} Escaped HTML
-     */
-    static escapeHtml(text) {
-        const map = {
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            '"': '&quot;',
-            "'": '&#039;',
-        };
-        return text.replace(/[&<>"']/g, (m) => map[m]);
-    }
 }
 
 export default A11yFixer;

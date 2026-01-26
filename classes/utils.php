@@ -415,37 +415,17 @@ PROMPT;
      * @return string HTML-formatted report.
      */
     public function generate_report(array $analysis, array $changes): string {
-        $report = '<div class="a11y-report">';
-        $report .= '<h3>' . get_string('a11yreport', 'aiplacement_a11y') . '</h3>';
+        global $OUTPUT;
 
-        // Summary.
-        $report .= '<p><strong>' . get_string('issuesfound', 'aiplacement_a11y', count($analysis['issues'])) . '</strong></p>';
+        // Prepare context for template
+        $context = [
+            'issues' => $analysis['issues'],
+            'issues_count' => count($analysis['issues']),
+            'changes' => $changes,
+            'has_changes' => count($changes) > 0,
+        ];
 
-        if (count($analysis['issues']) > 0) {
-            $report .= '<ul>';
-            foreach ($analysis['issues'] as $issue) {
-                $severity_class = 'severity-' . $issue['severity'];
-                $report .= '<li class="' . $severity_class . '">';
-                $report .= '[' . strtoupper($issue['severity']) . '] ' . $issue['description'];
-                $report .= '</li>';
-            }
-            $report .= '</ul>';
-        }
-
-        // Changes made.
-        if (count($changes) > 0) {
-            $report .= '<h4>' . get_string('changesfixed', 'aiplacement_a11y') . '</h4>';
-            $report .= '<ul>';
-            foreach ($changes as $change) {
-                $report .= '<li>';
-                $report .= htmlspecialchars($change['before']) . ' → ' . htmlspecialchars($change['after']);
-                $report .= '</li>';
-            }
-            $report .= '</ul>';
-        }
-
-        $report .= '</div>';
-
-        return $report;
+        // Render using Mustache template
+        return $OUTPUT->render_from_template('aiplacement_a11y/analysis_report', $context);
     }
 }

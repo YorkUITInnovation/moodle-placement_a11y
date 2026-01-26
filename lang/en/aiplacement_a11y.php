@@ -72,6 +72,13 @@ $string['a11yreport'] = 'Accessibility Analysis Report';
 $string['issuesfound'] = 'Found {$a} accessibility issue(s)';
 $string['changesfixed'] = 'Changes Fixed';
 $string['fixedsuccessfully'] = 'Accessibility issues fixed successfully';
+$string['viewhtml'] = 'View HTML';
+$string['viewcode'] = 'View Code';
+$string['status'] = 'Status';
+$string['original'] = 'Original';
+$string['fixed'] = 'Fixed';
+$string['acceptchanges'] = 'Accept Changes';
+$string['rejectchanges'] = 'Reject Changes';
 
 // Privacy strings.
 $string['privacy:metadata:userid'] = 'The user ID of the person requesting accessibility fixes';
