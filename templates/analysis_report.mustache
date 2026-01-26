@@ -14,15 +14,24 @@
 
     <p><strong>{{#str}}issuesfound, aiplacement_a11y, {{issues_count}}{{/str}}</strong></p>
 
-    {{#issues}}
-    <ul>
+    <ul class="a11y-issues-list">
         {{#issues}}
-        <li class="severity-{{severity}}">
-            [{{severity}}] {{description}}
+        <li class="a11y-issue-item severity-{{severity}}">
+            <div class="issue-header">
+                <span class="severity-badge">[{{severity}}]</span>
+                <span class="issue-description">{{description}}</span>
+            </div>
+            {{#html_snippet}}
+            <div class="issue-preview">
+                <div class="preview-label">{{#str}}preview, aiplacement_a11y{{/str}}:</div>
+                <div class="preview-content">
+                    {{{html_snippet}}}
+                </div>
+            </div>
+            {{/html_snippet}}
         </li>
         {{/issues}}
     </ul>
-    {{/issues}}
 
     {{#has_changes}}
     <h4>{{#str}}changesfixed, aiplacement_a11y{{/str}}</h4>

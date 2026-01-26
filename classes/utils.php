@@ -80,12 +80,14 @@ class utils {
             $alt = $img->getAttribute('alt');
             if (empty(trim($alt))) {
                 $src = $img->getAttribute('src');
+                $html_snippet = $dom->saveHTML($img);
                 $issues[] = [
                     'type' => 'missing_alt_text',
                     'element' => 'img',
                     'src' => $src,
                     'severity' => 'high',
-                    'description' => "Image missing alt text: {$src}",
+                    'description' => "Image missing alt text",
+                    'html_snippet' => $html_snippet,
                 ];
             }
         }
@@ -98,13 +100,15 @@ class utils {
 
             // Flag empty links or links with only generic text.
             if (empty($text) || in_array(strtolower($text), ['click here', 'read more', 'link', 'here'])) {
+                $html_snippet = $dom->saveHTML($link);
                 $issues[] = [
                     'type' => 'weak_link_text',
                     'element' => 'a',
                     'href' => $href,
                     'current_text' => $text,
                     'severity' => 'high',
-                    'description' => "Link has weak or missing text: '{$text}'",
+                    'description' => "Link has weak or missing text",
+                    'html_snippet' => $html_snippet,
                 ];
             }
         }
@@ -137,6 +141,7 @@ class utils {
                 // WCAG AA requires 4.5:1 for normal text, 3:1 for large text.
                 // We'll use 4.5:1 as the threshold.
                 if ($contrast_ratio < 4.5) {
+                    $html_snippet = $dom->saveHTML($elem);
                     $issues[] = [
                         'type' => 'contrast_issue',
                         'element' => $elem->nodeName,
@@ -144,12 +149,8 @@ class utils {
                         'color' => $color,
                         'background' => $bgcolor,
                         'contrast_ratio' => round($contrast_ratio, 2),
-                        'description' => sprintf(
-                            'Insufficient color contrast (%.2f:1, needs 4.5:1). Color: %s on %s',
-                            $contrast_ratio,
-                            $color,
-                            $bgcolor
-                        ),
+                        'description' => 'Insufficient color contrast',
+                        'html_snippet' => $html_snippet,
                     ];
                 }
             }
@@ -162,12 +163,14 @@ class utils {
             if (!empty($id)) {
                 $labels = $xpath->query("//label[@for='{$id}']");
                 if ($labels->length === 0) {
+                    $html_snippet = $dom->saveHTML($input);
                     $issues[] = [
                         'type' => 'missing_form_label',
                         'element' => 'input',
                         'id' => $id,
                         'severity' => 'high',
-                        'description' => "Form input '{$id}' missing associated label",
+                        'description' => "Form input missing label",
+                        'html_snippet' => $html_snippet,
                     ];
                 }
             }

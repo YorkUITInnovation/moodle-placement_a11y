@@ -79,6 +79,7 @@ $string['original'] = 'Original';
 $string['fixed'] = 'Fixed';
 $string['acceptchanges'] = 'Accept Changes';
 $string['rejectchanges'] = 'Reject Changes';
+$string['preview'] = 'Preview';
 
 // Privacy strings.
 $string['privacy:metadata:userid'] = 'The user ID of the person requesting accessibility fixes';
