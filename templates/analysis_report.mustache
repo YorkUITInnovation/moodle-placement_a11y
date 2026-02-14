@@ -23,13 +23,41 @@
             <div class="issue-header">
                 <span class="severity-badge">[{{severity}}]</span>
                 <span class="issue-description">{{description}}</span>
-                <button class="btn btn-sm btn-primary fix-issue-btn"
-                        data-issue-type="{{type}}"
-                        data-issue-index="{{index}}"
-                        aria-label="{{#str}}fixissue, aiplacement_a11y{{/str}}">
-                    <span class="btn-text">{{#str}}fixissue, aiplacement_a11y{{/str}}</span>
-                </button>
+                <div class="issue-actions">
+                    <button class="btn btn-sm btn-info suggest-fix-btn"
+                            data-issue-type="{{type}}"
+                            data-issue-index="{{index}}"
+                            aria-label="{{#str}}suggestedfix, aiplacement_a11y{{/str}}">
+                        <span class="btn-text">{{#str}}suggestedfix, aiplacement_a11y{{/str}}</span>
+                    </button>
+                    <button class="btn btn-sm btn-primary fix-issue-btn"
+                            data-issue-type="{{type}}"
+                            data-issue-index="{{index}}"
+                            aria-label="{{#str}}fixissue, aiplacement_a11y{{/str}}">
+                        <span class="btn-text">{{#str}}fixissue, aiplacement_a11y{{/str}}</span>
+                    </button>
+                </div>
             </div>
+
+            <!-- Suggestion panel (hidden by default, shown when Suggested Fix is clicked) -->
+            <div class="suggestion-panel" style="display: none;" data-issue-index="{{index}}">
+                <div class="suggestion-header">
+                    <button class="btn btn-sm btn-link collapse-suggestion-btn" aria-label="{{#str}}hidesuggestion, aiplacement_a11y{{/str}}">
+                        × {{#str}}hidesuggestion, aiplacement_a11y{{/str}}
+                    </button>
+                </div>
+
+                <div class="reasoning-section">
+                    <h6>{{#str}}whythisneedsfixing, aiplacement_a11y{{/str}}</h6>
+                    <div class="reasoning-content"></div>
+                </div>
+
+                <div class="suggested-code-section">
+                    <h6>{{#str}}suggestedfixlabel, aiplacement_a11y{{/str}}</h6>
+                    <textarea class="form-control suggested-html" rows="3"></textarea>
+                </div>
+            </div>
+
             {{#html_snippet}}
             <div class="issue-preview">
                 <div class="preview-label">{{#str}}preview, aiplacement_a11y{{/str}}:</div>

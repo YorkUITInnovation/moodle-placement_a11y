@@ -878,4 +878,146 @@ PROMPT;
 
         return $fixedhtml;
     }
+
+    /**
+     * Build prompt for getting AI suggestion with reasoning.
+     *
+     * @param string $html The HTML content.
+     * @param string $issuetype The type of issue.
+     * @param array $issue The issue data.
+     * @return string The prompt for AI.
+     */
+    public function build_suggestion_prompt(string $html, string $issuetype, array $issue): string {
+        $prompt = "You are an accessibility expert. Analyze this accessibility issue and provide a detailed suggestion.\n\n";
+
+        $prompt .= "HTML Content:\n" . $html . "\n\n";
+
+        $prompt .= "Issue Type: " . $issuetype . "\n";
+        $prompt .= "Issue Details: " . json_encode($issue) . "\n\n";
+
+        $prompt .= "Provide your response in JSON format with these keys:\n";
+        $prompt .= "1. reasoning: Explain WHY this is an accessibility problem. Reference WCAG 2.1 guidelines and explain the impact on users with disabilities.\n";
+        $prompt .= "2. suggested_html: Provide ONLY the fixed HTML element (not the entire document). Make it ready to replace the problematic element.\n\n";
+
+        $prompt .= "Return ONLY valid JSON in this exact format:\n";
+        $prompt .= '{"reasoning": "explanation here", "suggested_html": "fixed html here"}';
+
+        return $prompt;
+    }
+
+    /**
+     * Get image suggestion using vision AI.
+     *
+     * @param string $html The HTML content.
+     * @param array $issue The issue data.
+     * @param string $imagebase64 Base64 image data.
+     * @return array Suggestion with reasoning and suggested_html.
+     */
+    public function get_image_suggestion_with_vision(string $html, array $issue, string $imagebase64): array {
+        // Get Azure config.
+        $manager = \core\di::get(\core_ai\manager::class);
+        $provider_instances = $manager->get_provider_instances(['provider' => 'aiprovider_azureai\\provider']);
+        $provider_instance = reset($provider_instances);
+
+        if (empty($provider_instance)) {
+            throw new \moodle_exception('azurenotconfigured', 'aiplacement_a11y');
+        }
+
+        $apikey = $provider_instance->config['apikey'] ?? '';
+        $endpoint = $provider_instance->config['endpoint'] ?? '';
+        $deployment = '';
+        $apiversion = '';
+
+        foreach ($provider_instance->actionconfig as $key => $action_config) {
+            if ($key == 'core_ai\aiactions\generate_text') {
+                $deployment = $provider_instance->actionconfig[$key]['settings']['deployment'] ?? '';
+                $apiversion = $provider_instance->actionconfig[$key]['settings']['apiversion'] ?? '2024-02-15-preview';
+                break;
+            }
+        }
+
+        if (empty($endpoint) || empty($apikey) || empty($deployment)) {
+            throw new \moodle_exception('azurenotconfigured', 'aiplacement_a11y');
+        }
+
+        $url = rtrim($endpoint, '/') . '/openai/deployments/' . $deployment . '/chat/completions?api-version=' . $apiversion;
+
+        $prompt = "Analyze this image and provide:\n";
+        $prompt .= "1. reasoning: Explain why images need alt text for accessibility (WCAG 2.1 Level A).\n";
+        $prompt .= "2. suggested_html: Describe this image in under 125 characters for alt text.\n\n";
+        $prompt .= "Return JSON: {\"reasoning\": \"...\", \"suggested_html\": \"description here\"}";
+
+        $payload = [
+            'messages' => [
+                [
+                    'role' => 'user',
+                    'content' => [
+                        ['type' => 'text', 'text' => $prompt],
+                        ['type' => 'image_url', 'image_url' => ['url' => $imagebase64]],
+                    ],
+                ],
+            ],
+            'max_tokens' => 300,
+        ];
+
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json',
+            'api-key: ' . $apikey,
+        ]);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+
+        $response = curl_exec($ch);
+        $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($response === false || $httpcode !== 200) {
+            throw new \moodle_exception('aierror', 'core_ai', '', 'Vision API error');
+        }
+
+        $responsedata = json_decode($response, true);
+        $content = trim($responsedata['choices'][0]['message']['content'] ?? '');
+
+        $suggestion = json_decode($content, true);
+        if ($suggestion === null) {
+            // Fallback: extract description from text.
+            $alttext = $content;
+            if (strlen($alttext) > 125) {
+                $alttext = substr($alttext, 0, 122) . '...';
+            }
+            $suggestion = [
+                'reasoning' => 'Images without alt text prevent screen reader users from understanding the image content. WCAG 2.1 Level A requires all images to have alternative text.',
+                'suggested_html' => $alttext,
+            ];
+        }
+
+        return $suggestion;
+    }
+
+    /**
+     * Parse suggestion from text response if JSON parsing fails.
+     *
+     * @param string $response The AI response.
+     * @param string $html The original HTML.
+     * @param array $issue The issue data.
+     * @return array Parsed suggestion.
+     */
+    public function parse_suggestion_from_text(string $response, string $html, array $issue): array {
+        // Try to extract JSON from text (sometimes AI wraps it in markdown).
+        if (preg_match('/\{[^}]*"reasoning"[^}]*\}/s', $response, $matches)) {
+            $suggestion = json_decode($matches[0], true);
+            if ($suggestion !== null) {
+                return $suggestion;
+            }
+        }
+
+        // Fallback: treat entire response as reasoning, extract HTML from original.
+        return [
+            'reasoning' => $response,
+            'suggested_html' => $html,
+        ];
+    }
 }

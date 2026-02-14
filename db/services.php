@@ -39,4 +39,11 @@ $functions = [
         'ajax' => true,
         'services' => [MOODLE_OFFICIAL_MOBILE_SERVICE],
     ],
+    'aiplacement_a11y_get_suggestion' => [
+        'classname' => \aiplacement_a11y\external\get_suggestion::class,
+        'description' => 'Get AI suggestion with reasoning for fixing an accessibility issue',
+        'type' => 'read',
+        'ajax' => true,
+        'services' => [MOODLE_OFFICIAL_MOBILE_SERVICE],
+    ],
 ];
