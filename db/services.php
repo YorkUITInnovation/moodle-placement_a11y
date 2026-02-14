@@ -32,4 +32,11 @@ $functions = [
         'ajax' => true,
         'services' => [MOODLE_OFFICIAL_MOBILE_SERVICE],
     ],
+    'aiplacement_a11y_fix_single_issue' => [
+        'classname' => \aiplacement_a11y\external\fix_single_issue::class,
+        'description' => 'Fix a single accessibility issue in HTML content',
+        'type' => 'write',
+        'ajax' => true,
+        'services' => [MOODLE_OFFICIAL_MOBILE_SERVICE],
+    ],
 ];

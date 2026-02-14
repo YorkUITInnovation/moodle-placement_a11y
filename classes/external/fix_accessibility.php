@@ -115,6 +115,7 @@ class fix_accessibility extends external_api {
                 'issues_found' => 0,
                 'analysis_report' => get_string('noaccessibilityissues', 'aiplacement_a11y'),
                 'changes_made' => json_encode([]),
+                'issues_data' => json_encode([]),
             ];
         }
 
@@ -122,24 +123,8 @@ class fix_accessibility extends external_api {
         $prompt = $utils->build_accessibility_fix_prompt($htmlcontent, $analysis);
 
         try {
-            // Create the AI action.
-            $action = new \core_ai\aiactions\generate_text(
-                contextid: $contextid,
-                userid: $USER->id,
-                prompttext: $prompt,
-            );
-
-            // Process the action through the AI manager.
-            $response = $manager->process_action($action);
-
-            // Check if the action was successful.
-            if (!$response->get_success()) {
-                throw new \moodle_exception('aierror', 'core_ai', '', $response->get_error());
-            }
-
-            // Get the generated content from the response.
-            $responsedata = $response->get_response_data();
-            $fixed_content = $responsedata['generatedcontent'] ?? '';
+            // Use direct Azure API call (same method as single issue fixes).
+            $fixed_content = $utils->fix_with_direct_azure_call($prompt);
 
             // Validate the fixed content is valid HTML.
             if (!$utils->is_valid_html($fixed_content)) {
@@ -171,6 +156,7 @@ class fix_accessibility extends external_api {
                 'issues_found' => count($analysis['issues']),
                 'analysis_report' => $detailed_report,
                 'changes_made' => json_encode($changes),
+                'issues_data' => json_encode($analysis['issues']),
             ];
 
         } catch (\Exception $e) {
@@ -192,6 +178,7 @@ class fix_accessibility extends external_api {
             'issues_found' => new external_value(PARAM_INT, 'Number of accessibility issues found'),
             'analysis_report' => new external_value(PARAM_RAW, 'Detailed analysis report'),
             'changes_made' => new external_value(PARAM_RAW, 'JSON array of changes made'),
+            'issues_data' => new external_value(PARAM_RAW, 'JSON array of issues data'),
         ]);
     }
 }

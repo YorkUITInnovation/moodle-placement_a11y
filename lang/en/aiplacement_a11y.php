@@ -66,6 +66,9 @@ $string['invalidhtml'] = 'Invalid HTML content provided';
 $string['generatedinvalidhtml'] = 'Error: Generated HTML is invalid';
 $string['nopermission'] = 'You do not have permission to use this feature';
 $string['ainotenabledincourse'] = 'AI tools are not enabled in this course';
+$string['invalidissuedata'] = 'Invalid issue data provided';
+$string['noimagesource'] = 'No image source found in issue data';
+$string['cannotaccessimage'] = 'Cannot access image for processing. The image may not be publicly accessible.';
 
 // Report strings.
 $string['a11yreport'] = 'Accessibility Analysis Report';
@@ -80,6 +83,12 @@ $string['fixed'] = 'Fixed';
 $string['acceptchanges'] = 'Accept Changes';
 $string['rejectchanges'] = 'Reject Changes';
 $string['preview'] = 'Preview';
+$string['fixissue'] = 'Fix';
+$string['fixall'] = 'Fix All Issues';
+$string['fixing'] = 'Fixing...';
+$string['issuesfixed'] = 'Fixed ✓';
+$string['applychanges'] = 'Apply Changes';
+$string['cancel'] = 'Cancel';
 
 // Privacy strings.
 $string['privacy:metadata:userid'] = 'The user ID of the person requesting accessibility fixes';

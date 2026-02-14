@@ -10,16 +10,25 @@
     * has_changes - Boolean if changes were made
 }}
 <div class="a11y-report">
-    <h3>{{#str}}a11yreport, aiplacement_a11y{{/str}}</h3>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h3 style="margin: 0;">{{#str}}a11yreport, aiplacement_a11y{{/str}}</h3>
+        <button class="btn btn-primary fix-all-btn">{{#str}}fixall, aiplacement_a11y{{/str}}</button>
+    </div>
 
     <p><strong>{{#str}}issuesfound, aiplacement_a11y, {{issues_count}}{{/str}}</strong></p>
 
     <ul class="a11y-issues-list">
         {{#issues}}
-        <li class="a11y-issue-item severity-{{severity}}">
+        <li class="a11y-issue-item severity-{{severity}}" data-issue-index="{{index}}">
             <div class="issue-header">
                 <span class="severity-badge">[{{severity}}]</span>
                 <span class="issue-description">{{description}}</span>
+                <button class="btn btn-sm btn-primary fix-issue-btn"
+                        data-issue-type="{{type}}"
+                        data-issue-index="{{index}}"
+                        aria-label="{{#str}}fixissue, aiplacement_a11y{{/str}}">
+                    <span class="btn-text">{{#str}}fixissue, aiplacement_a11y{{/str}}</span>
+                </button>
             </div>
             {{#html_snippet}}
             <div class="issue-preview">

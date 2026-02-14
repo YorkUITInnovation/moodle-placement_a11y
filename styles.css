@@ -171,6 +171,105 @@
     align-items: center;
     gap: 0.5rem;
     margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.a11y-issue-item .issue-description {
+    flex: 1;
+    min-width: 200px;
+}
+
+/* Fix button styling */
+.a11y-issue-item .fix-issue-btn {
+    margin-left: auto;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.85rem;
+    border-radius: 4px;
+    border: none;
+    background: #0d6efd;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.a11y-issue-item .fix-issue-btn:hover {
+    background: #0b5ed7;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.a11y-issue-item .fix-issue-btn:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* Fixing state */
+.a11y-issue-item.fixing .fix-issue-btn {
+    background: #ffc107;
+    color: #000;
+}
+
+.a11y-issue-item.fixing .fix-issue-btn::before {
+    content: '';
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    margin-right: 6px;
+    border: 2px solid #000;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+/* Fixed state */
+.a11y-issue-item.fixed {
+    border-left-color: #28a745;
+    background: #f8fff9;
+}
+
+.a11y-issue-item.fixed .fix-issue-btn {
+    background: #28a745;
+    color: white;
+}
+
+.a11y-issue-item.fixed .severity-badge {
+    background: #28a745;
+    color: white;
+}
+
+/* Fix All button */
+.fix-all-container {
+    margin: 1rem 0;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.fix-all-btn {
+    padding: 0.5rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 4px;
+    border: none;
+    background: #0d6efd;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.fix-all-btn:hover {
+    background: #0b5ed7;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.fix-all-btn:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+    opacity: 0.6;
 }
 
 .a11y-issue-item .severity-badge {
@@ -325,11 +424,26 @@
     border-radius: 0 0 0.25rem 0.25rem;
 }
 
-/* Rendered HTML Comparison */
+/* Rendered HTML Comparison (Legacy - keeping for backwards compatibility) */
 .a11y-rendered-comparison {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 1rem;
+}
+
+/* Rendered HTML Single View */
+.a11y-rendered-single {
+    display: block;
+    width: 100%;
+}
+
+.a11y-rendered-single .rendered-original {
+    border: 1px solid #ddd;
+    background: white !important;
+    background-color: #ffffff !important;
+    border-radius: 4px;
+    overflow: hidden;
+    border-left: 3px solid #0d6efd; /* Blue accent for single view */
 }
 
 .rendered-original,
@@ -342,7 +456,7 @@
 }
 
 /* Add subtle visual cue for original (left side) */
-.rendered-original {
+.a11y-rendered-comparison .rendered-original {
     border-left: 3px solid #f0ad4e; /* Orange accent for original */
 }
 
@@ -369,40 +483,33 @@
     overflow-y: auto;
     background: white !important;
     background-color: #ffffff !important;
-    color: #212529 !important; /* Dark text for readability */
+    /* DO NOT override colors - we need to see the original HTML's inline styles to identify accessibility issues */
     font-size: 1rem;
     line-height: 1.5;
 }
 
-/* Ensure all content in preview has proper contrast */
-.rendered-html-preview * {
-    color: inherit !important;
-}
 
-/* Override any light grey text that might be inherited */
-.rendered-html-preview p,
-.rendered-html-preview div,
-.rendered-html-preview span,
-.rendered-html-preview li {
-    color: #212529 !important;
-}
-
-/* Preserve link colors */
-.rendered-html-preview a {
-    color: #0d6efd !important;
-    text-decoration: underline;
-}
-
-.rendered-html-preview a:hover {
-    color: #0a58ca !important;
-}
-
-/* Code View Comparison */
+/* Code View Comparison (Legacy - keeping for backwards compatibility) */
 .a11y-code-comparison {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 1rem;
     min-height: 350px; /* Ensure adequate height */
+}
+
+/* Code View Single View */
+.a11y-code-single {
+    display: block;
+    width: 100%;
+}
+
+.a11y-code-single .code-original {
+    border: 1px solid #ddd;
+    background: white !important;
+    background-color: #ffffff !important;
+    border-radius: 4px;
+    overflow: hidden;
+    border-left: 3px solid #0d6efd; /* Blue accent for single view */
 }
 
 .code-original,
@@ -415,7 +522,7 @@
 }
 
 /* Add subtle visual cue for original (left side) */
-.code-original {
+.a11y-code-comparison .code-original {
     border-left: 3px solid #f0ad4e; /* Orange accent for original */
 }
 
@@ -602,8 +709,15 @@
 
 /* Responsive Design */
 @media (max-width: 768px) {
+    .a11y-rendered-comparison,
+    .a11y-code-comparison,
     .comparison-content {
         grid-template-columns: 1fr;
+    }
+
+    .a11y-rendered-single,
+    .a11y-code-single {
+        width: 100%;
     }
 
     .a11y-actions {
@@ -619,7 +733,9 @@
     }
 
     .comparison-original pre,
-    .comparison-fixed pre {
+    .comparison-fixed pre,
+    .code-original pre,
+    .code-fixed pre {
         font-size: 0.75rem;
         max-height: 200px;
     }

@@ -232,6 +232,64 @@ PROMPT;
     }
 
     /**
+     * Build a prompt for fixing a single accessibility issue.
+     *
+     * @param string $html The HTML content.
+     * @param string $issuetype The type of issue.
+     * @param array $issue The issue data.
+     * @return string The prompt for AI.
+     */
+    public function build_single_issue_fix_prompt(string $html, string $issuetype, array $issue): string {
+        $prompt = "You are an expert in web accessibility and WCAG AA compliance.\n\n";
+
+        switch ($issuetype) {
+            case 'missing_alt_text':
+                $prompt .= "Fix the following image that is missing alt text:\n\n";
+                $prompt .= "HTML snippet: {$issue['html_snippet']}\n\n";
+                $prompt .= "Add a descriptive alt attribute (under 125 characters).\n";
+                break;
+
+            case 'weak_link_text':
+                $prompt .= "Fix the following link with weak or generic text:\n\n";
+                $prompt .= "Current HTML: {$issue['html_snippet']}\n";
+                $prompt .= "Current link text: '{$issue['current_text']}'\n";
+                $prompt .= "Link URL: {$issue['href']}\n\n";
+                $prompt .= "Replace the link text with descriptive, meaningful text.\n";
+                break;
+
+            case 'contrast_issue':
+                $prompt .= "Fix the following element with insufficient color contrast:\n\n";
+                $prompt .= "HTML snippet: {$issue['html_snippet']}\n";
+                $prompt .= "Current contrast ratio: {$issue['contrast_ratio']}:1\n";
+                $prompt .= "Required: 4.5:1 (WCAG AA)\n\n";
+                $prompt .= "Adjust the color or background-color to meet WCAG AA standards.\n";
+                break;
+
+            case 'missing_form_label':
+                $prompt .= "Fix the following form input that is missing a label:\n\n";
+                $prompt .= "HTML snippet: {$issue['html_snippet']}\n\n";
+                $prompt .= "Add an appropriate label element with a descriptive for attribute.\n";
+                break;
+
+            default:
+                $prompt .= "Fix the following accessibility issue:\n\n";
+                $prompt .= "Issue: {$issue['description']}\n";
+                $prompt .= "HTML snippet: {$issue['html_snippet']}\n\n";
+        }
+
+        $prompt .= "\nIMPORTANT:\n";
+        $prompt .= "- Return ONLY the complete, fixed HTML content\n";
+        $prompt .= "- Fix ONLY this specific issue\n";
+        $prompt .= "- Do not change anything else in the HTML\n";
+        $prompt .= "- Ensure the HTML remains valid\n";
+        $prompt .= "- Preserve all existing attributes and classes\n\n";
+        $prompt .= "Complete HTML content to fix:\n{$html}\n\n";
+        $prompt .= "Fixed HTML (complete):";
+
+        return $prompt;
+    }
+
+    /**
      * Extract color value from inline style attribute.
      *
      * @param string $style The style attribute value.
@@ -420,9 +478,16 @@ PROMPT;
     public function generate_report(array $analysis, array $changes): string {
         global $OUTPUT;
 
+        // Add index to each issue for JavaScript tracking
+        $issues_with_index = [];
+        foreach ($analysis['issues'] as $index => $issue) {
+            $issue['index'] = $index;
+            $issues_with_index[] = $issue;
+        }
+
         // Prepare context for template
         $context = [
-            'issues' => $analysis['issues'],
+            'issues' => $issues_with_index,
             'issues_count' => count($analysis['issues']),
             'changes' => $changes,
             'has_changes' => count($changes) > 0,
@@ -430,5 +495,387 @@ PROMPT;
 
         // Render using Mustache template
         return $OUTPUT->render_from_template('aiplacement_a11y/analysis_report', $context);
+    }
+
+    /**
+     * Fix an image using vision AI to generate alt text.
+     *
+     * @param string $html The HTML content.
+     * @param array $issue The issue data.
+     * @param \context $context The context.
+     * @param int $userid The user ID.
+     * @return string The fixed HTML content.
+     * @throws \moodle_exception
+     */
+    public function fix_image_with_vision(string $html, array $issue, \context $context, int $userid): string {
+        global $CFG;
+
+        // Extract image src from the issue.
+        $imgsrc = $issue['src'] ?? '';
+        if (empty($imgsrc)) {
+            throw new \moodle_exception('noimagesource', 'aiplacement_a11y');
+        }
+
+        // Try to get image as base64.
+        $imagebase64 = $this->get_image_as_base64($imgsrc);
+
+        if ($imagebase64 === null) {
+            throw new \moodle_exception('cannotaccessimage', 'aiplacement_a11y');
+        }
+
+        // Build the vision prompt.
+        $prompt = "Describe this image concisely for use as alt text (under 125 characters). ";
+        $prompt .= "Focus on the main subject and action. Be descriptive but brief.";
+
+        // Use AI to describe the image.
+        $manager = \core\di::get(\core_ai\manager::class);
+
+        // Create a generate_image action (or use appropriate vision action).
+        // Note: This assumes the AI provider supports vision. We'll use generate_text with image context.
+        $action = new \core_ai\aiactions\generate_text(
+            contextid: $context->id,
+            userid: $userid,
+            prompttext: $prompt,
+        );
+
+        // Add image data to the action if supported.
+        // For now, we'll include the base64 image in the prompt or use a vision-specific action.
+        // This is a simplified approach - may need adjustment based on Moodle's AI API.
+
+        $response = $manager->process_action($action);
+
+        if (!$response->get_success()) {
+            throw new \moodle_exception('aierror', 'core_ai', '', $response->get_error());
+        }
+
+        $responsedata = $response->get_response_data();
+        $alttext = trim($responsedata['generatedcontent'] ?? '');
+
+        // Limit alt text to 125 characters.
+        if (strlen($alttext) > 125) {
+            $alttext = substr($alttext, 0, 122) . '...';
+        }
+
+        // Replace the image in the HTML with the new alt text.
+        $fixedhtml = $this->replace_image_alt_text($html, $imgsrc, $alttext);
+
+        return $fixedhtml;
+    }
+
+    /**
+     * Fix an image using vision AI with base64 image data from JavaScript.
+     *
+     * @param string $html The HTML content.
+     * @param array $issue The issue data.
+     * @param string $imagebase64 Base64-encoded image data from browser.
+     * @param \context $context The context.
+     * @param int $userid The user ID.
+     * @return string The fixed HTML content.
+     * @throws \moodle_exception
+     */
+    public function fix_image_with_vision_base64(string $html, array $issue, string $imagebase64, \context $context, int $userid): string {
+        // Extract image src from the issue.
+        $imgsrc = $issue['src'] ?? '';
+        if (empty($imgsrc)) {
+            throw new \moodle_exception('noimagesource', 'aiplacement_a11y');
+        }
+
+        // Check if we have base64 data.
+        if (empty($imagebase64)) {
+            throw new \moodle_exception('cannotaccessimage', 'aiplacement_a11y');
+        }
+
+        // Build the vision prompt.
+        $prompt = "Describe this image concisely for use as alt text (under 125 characters). ";
+        $prompt .= "Focus on the main subject and action. Be descriptive but brief.";
+
+        // Get Azure OpenAI configuration from provider instance (like design_ideas block).
+        $manager = \core\di::get(\core_ai\manager::class);
+        $provider_instances = $manager->get_provider_instances(['provider' => 'aiprovider_azureai\\provider']);
+        $provider_instance = reset($provider_instances);
+
+        if (empty($provider_instance)) {
+            throw new \moodle_exception('azurenotconfigured', 'aiplacement_a11y');
+        }
+
+        // Extract configuration from provider instance.
+        $apikey = $provider_instance->config['apikey'] ?? '';
+        $endpoint = $provider_instance->config['endpoint'] ?? '';
+        $deployment = '';
+        $apiversion = '';
+
+        // Get deployment and API version from action config.
+        foreach ($provider_instance->actionconfig as $key => $action_config) {
+            if ($key == 'core_ai\aiactions\generate_text') {
+                $deployment = $provider_instance->actionconfig[$key]['settings']['deployment'] ?? '';
+                $apiversion = $provider_instance->actionconfig[$key]['settings']['apiversion'] ?? '2024-02-15-preview';
+                break;
+            }
+        }
+
+        debugging("=== AZURE CONFIG DEBUG ===", DEBUG_DEVELOPER);
+
+        debugging("azure_endpoint: '" . $endpoint . "'", DEBUG_DEVELOPER);
+        debugging("azure_api_key: '" . (empty($apikey) ? '(empty)' : 'SET (length: ' . strlen($apikey) . ')') . "'", DEBUG_DEVELOPER);
+        debugging("azure_deployment: '" . $deployment . "'", DEBUG_DEVELOPER);
+        debugging("azure_api_version: '" . $apiversion . "'", DEBUG_DEVELOPER);
+        debugging("=== END CONFIG DEBUG ===", DEBUG_DEVELOPER);
+
+        if (empty($endpoint) || empty($apikey) || empty($deployment)) {
+            throw new \moodle_exception('azurenotconfigured', 'aiplacement_a11y');
+        }
+
+        // Construct the Azure OpenAI vision API URL.
+        $url = rtrim($endpoint, '/') . '/openai/deployments/' . $deployment . '/chat/completions?api-version=' . $apiversion;
+
+        // Check the size of base64 data - if too large, throw better error.
+        $base64size = strlen($imagebase64);
+        debugging("Image base64 size: " . $base64size . " bytes", DEBUG_DEVELOPER);
+
+        // Build the request payload for vision.
+        $payload = [
+            'messages' => [
+                [
+                    'role' => 'user',
+                    'content' => [
+                        [
+                            'type' => 'text',
+                            'text' => $prompt,
+                        ],
+                        [
+                            'type' => 'image_url',
+                            'image_url' => [
+                                'url' => $imagebase64,
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'max_tokens' => 150,
+        ];
+
+        // Make the HTTP request using cURL.
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json',
+            'api-key: ' . $apikey,
+        ]);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30); // 30 second timeout.
+
+        $response = curl_exec($ch);
+        $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlerror = curl_error($ch);
+        curl_close($ch);
+
+        // Log the response for debugging.
+        debugging("Azure API HTTP Code: " . $httpcode, DEBUG_DEVELOPER);
+        if ($response) {
+            debugging("Azure API Response: " . substr($response, 0, 500), DEBUG_DEVELOPER);
+        }
+
+        if ($response === false || $httpcode !== 200) {
+            $errormsg = 'Azure API error: ' . ($curlerror ?: "HTTP $httpcode");
+            if ($response) {
+                $responsedata = json_decode($response, true);
+                if (isset($responsedata['error']['message'])) {
+                    $errormsg = $responsedata['error']['message'];
+                }
+            }
+            throw new \moodle_exception('aierror', 'core_ai', '', $errormsg);
+        }
+
+        // Parse the response.
+        $responsedata = json_decode($response, true);
+        $alttext = trim($responsedata['choices'][0]['message']['content'] ?? '');
+
+        if (empty($alttext)) {
+            throw new \moodle_exception('aierror', 'core_ai', '', 'No alt text generated');
+        }
+
+        // Limit alt text to 125 characters.
+        if (strlen($alttext) > 125) {
+            $alttext = substr($alttext, 0, 122) . '...';
+        }
+
+        // Replace the image in the HTML with the new alt text.
+        $fixedhtml = $this->replace_image_alt_text($html, $imgsrc, $alttext);
+
+        return $fixedhtml;
+    }
+
+    /**
+     * Fix accessibility issue using direct Azure OpenAI API call.
+     * Uses the same provider instance approach as vision fixes.
+     *
+     * @param string $prompt The prompt to send to AI.
+     * @return string The AI response.
+     * @throws \moodle_exception
+     */
+    public function fix_with_direct_azure_call(string $prompt): string {
+        // Get Azure OpenAI configuration from provider instance.
+        $manager = \core\di::get(\core_ai\manager::class);
+        $provider_instances = $manager->get_provider_instances(['provider' => 'aiprovider_azureai\\provider']);
+        $provider_instance = reset($provider_instances);
+
+        if (empty($provider_instance)) {
+            throw new \moodle_exception('azurenotconfigured', 'aiplacement_a11y');
+        }
+
+        // Extract configuration from provider instance.
+        $apikey = $provider_instance->config['apikey'] ?? '';
+        $endpoint = $provider_instance->config['endpoint'] ?? '';
+        $deployment = '';
+        $apiversion = '';
+
+        // Get deployment and API version from action config.
+        foreach ($provider_instance->actionconfig as $key => $action_config) {
+            if ($key == 'core_ai\aiactions\generate_text') {
+                $deployment = $provider_instance->actionconfig[$key]['settings']['deployment'] ?? '';
+                $apiversion = $provider_instance->actionconfig[$key]['settings']['apiversion'] ?? '2024-02-15-preview';
+                break;
+            }
+        }
+
+        if (empty($endpoint) || empty($apikey) || empty($deployment)) {
+            throw new \moodle_exception('azurenotconfigured', 'aiplacement_a11y');
+        }
+
+        // Construct the Azure OpenAI API URL.
+        $url = rtrim($endpoint, '/') . '/openai/deployments/' . $deployment . '/chat/completions?api-version=' . $apiversion;
+
+        // Build the request payload.
+        $payload = [
+            'messages' => [
+                [
+                    'role' => 'user',
+                    'content' => $prompt,
+                ],
+            ],
+            'max_tokens' => 4096,
+            'temperature' => 0.7,
+        ];
+
+        // Make the HTTP request using cURL.
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json',
+            'api-key: ' . $apikey,
+        ]);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+
+        $response = curl_exec($ch);
+        $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlerror = curl_error($ch);
+        curl_close($ch);
+
+        if ($response === false || $httpcode !== 200) {
+            $errormsg = 'Azure API error: ' . ($curlerror ?: "HTTP $httpcode");
+            if ($response) {
+                $responsedata = json_decode($response, true);
+                if (isset($responsedata['error']['message'])) {
+                    $errormsg = $responsedata['error']['message'];
+                }
+            }
+            throw new \moodle_exception('aierror', 'core_ai', '', $errormsg);
+        }
+
+        // Parse the response.
+        $responsedata = json_decode($response, true);
+        $content = trim($responsedata['choices'][0]['message']['content'] ?? '');
+
+        if (empty($content)) {
+            throw new \moodle_exception('aierror', 'core_ai', '', 'No content generated');
+        }
+
+        return $content;
+    }
+
+    /**
+     * Get image as base64 encoded string.
+     *
+     * @param string $imgsrc The image source URL.
+     * @return string|null Base64 encoded image or null if can't access.
+     */
+    private function get_image_as_base64(string $imgsrc): ?string {
+        global $CFG;
+
+        // Handle different types of image URLs.
+        $imagedata = null;
+
+        // Check if it's a data URI already.
+        if (strpos($imgsrc, 'data:image') === 0) {
+            return $imgsrc;
+        }
+
+        // Handle absolute URLs.
+        if (strpos($imgsrc, 'http://') === 0 || strpos($imgsrc, 'https://') === 0) {
+            // Try to fetch the image.
+            $imagedata = @file_get_contents($imgsrc);
+        } else if (strpos($imgsrc, '/') === 0) {
+            // Relative URL from Moodle root.
+            $filepath = $CFG->dirroot . $imgsrc;
+            if (file_exists($filepath)) {
+                $imagedata = @file_get_contents($filepath);
+            }
+        } else {
+            // Handle pluginfile.php URLs and other Moodle-specific URLs.
+            if (strpos($imgsrc, 'pluginfile.php') !== false || strpos($imgsrc, 'draftfile.php') !== false) {
+                // Try to construct full URL.
+                $fullurl = $CFG->wwwroot . '/' . ltrim($imgsrc, '/');
+                $imagedata = @file_get_contents($fullurl);
+            }
+        }
+
+        if ($imagedata === null || $imagedata === false) {
+            return null;
+        }
+
+        // Detect MIME type.
+        $finfo = new \finfo(FILEINFO_MIME_TYPE);
+        $mimetype = $finfo->buffer($imagedata);
+
+        // Encode to base64.
+        $base64 = base64_encode($imagedata);
+
+        return "data:{$mimetype};base64,{$base64}";
+    }
+
+    /**
+     * Replace alt text for a specific image in HTML.
+     *
+     * @param string $html The HTML content.
+     * @param string $imgsrc The image source to find.
+     * @param string $alttext The new alt text.
+     * @return string The updated HTML.
+     */
+    private function replace_image_alt_text(string $html, string $imgsrc, string $alttext): string {
+        $dom = new \DOMDocument('1.0', 'UTF-8');
+        libxml_use_internal_errors(true);
+        @$dom->loadHTML('<?xml encoding="UTF-8">' . $html);
+        libxml_use_internal_errors(false);
+
+        $xpath = new \DOMXPath($dom);
+        $images = $xpath->query("//img[@src='{$imgsrc}']");
+
+        foreach ($images as $img) {
+            $img->setAttribute('alt', $alttext);
+        }
+
+        // Get the HTML back.
+        $body = $dom->getElementsByTagName('body')->item(0);
+        $fixedhtml = '';
+        if ($body) {
+            foreach ($body->childNodes as $node) {
+                $fixedhtml .= $dom->saveHTML($node);
+            }
+        }
+
+        return $fixedhtml;
     }
 }
