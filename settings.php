@@ -48,4 +48,19 @@ if ($hassiteconfig) {
         new \lang_string('requirements', 'aiplacement_a11y'),
         new \lang_string('requirements_desc', 'aiplacement_a11y')
     ));
+
+    // Auto-check settings.
+    $settings->add(new \admin_setting_heading(
+        'aiplacement_a11y/autocheck',
+        new \lang_string('autocheckheading', 'aiplacement_a11y'),
+        new \lang_string('autocheckheading_desc', 'aiplacement_a11y')
+    ));
+
+    $settings->add(new \admin_setting_configtext(
+        'aiplacement_a11y/autocheck_debounce',
+        new \lang_string('autocheckdebounce', 'aiplacement_a11y'),
+        new \lang_string('autocheckdebounce_desc', 'aiplacement_a11y'),
+        2000, // Default: 2 seconds (2000ms).
+        PARAM_INT
+    ));
 }

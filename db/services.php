@@ -46,4 +46,18 @@ $functions = [
         'ajax' => true,
         'services' => [MOODLE_OFFICIAL_MOBILE_SERVICE],
     ],
+    'aiplacement_a11y_analyze_only' => [
+        'classname' => \aiplacement_a11y\external\analyze_only::class,
+        'description' => 'Analyze accessibility issues without AI fix (for button status)',
+        'type' => 'read',
+        'ajax' => true,
+        'services' => [MOODLE_OFFICIAL_MOBILE_SERVICE],
+    ],
+    'aiplacement_a11y_get_settings' => [
+        'classname' => \aiplacement_a11y\external\get_settings::class,
+        'description' => 'Get plugin settings for JavaScript',
+        'type' => 'read',
+        'ajax' => true,
+        'services' => [MOODLE_OFFICIAL_MOBILE_SERVICE],
+    ],
 ];

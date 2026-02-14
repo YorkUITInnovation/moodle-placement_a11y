@@ -95,6 +95,16 @@ $string['issuesfixed'] = 'Fixed ✓';
 $string['applychanges'] = 'Apply Changes';
 $string['cancel'] = 'Cancel';
 
+// Auto-check settings.
+$string['autocheckheading'] = 'Auto-Check Settings';
+$string['autocheckheading_desc'] = 'Configure automatic accessibility checking in the editor';
+$string['autocheckdebounce'] = 'Auto-check delay (milliseconds)';
+$string['autocheckdebounce_desc'] = 'Delay before automatically checking content after user stops typing. Set to 0 to disable auto-check. Default: 2000 (2 seconds). Higher values reduce server load but delay feedback.';
+
+// Button status.
+$string['accessibilityok'] = 'Accessibility: No issues found';
+$string['accessibilityissues'] = 'Accessibility: {$a} issue(s) found - Click to fix';
+
 // Privacy strings.
 $string['privacy:metadata:userid'] = 'The user ID of the person requesting accessibility fixes';
 $string['privacy:metadata:content'] = 'The HTML content being analyzed for accessibility issues';
