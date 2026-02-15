@@ -105,7 +105,17 @@ $string['autocheckdebounce_desc'] = 'Delay before automatically checking content
 $string['accessibilityok'] = 'Accessibility: No issues found';
 $string['accessibilityissues'] = 'Accessibility: {$a} issue(s) found - Click to fix';
 
+// Table accessibility issue strings.
+$string['table_missing_caption'] = 'Table missing caption';
+$string['table_missing_caption_desc'] = 'Tables should have a caption element to describe their purpose and help users understand the table\'s content.';
+$string['table_merged_cells'] = 'Table has merged cells';
+$string['table_merged_cells_desc'] = 'Tables with merged cells (colspan/rowspan) can be confusing for screen reader users. Use proper header associations instead.';
+$string['table_missing_headers'] = 'Table missing proper headers';
+$string['table_missing_headers_desc'] = 'Tables should use th (table header) elements in the first row to define column headers, helping screen reader users understand the table structure.';
+
 // Privacy strings.
 $string['privacy:metadata:userid'] = 'The user ID of the person requesting accessibility fixes';
 $string['privacy:metadata:content'] = 'The HTML content being analyzed for accessibility issues';
 $string['privacy:metadata:aiprovider'] = 'Content is sent to the configured AI provider for processing';
+
+

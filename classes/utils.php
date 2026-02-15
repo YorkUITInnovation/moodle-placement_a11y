@@ -176,6 +176,63 @@ class utils {
             }
         }
 
+        // Check for tables missing captions.
+        $tables = $xpath->query('//table');
+        foreach ($tables as $table) {
+            $caption = $xpath->query('caption', $table);
+            if ($caption->length === 0) {
+                $issues[] = [
+                    'type' => 'table_missing_caption',
+                    'element' => 'table',
+                    'severity' => 'low',
+                    'description' => "Table missing caption",
+                ];
+            }
+        }
+
+        // Check for tables with merged cells (colspan or rowspan).
+        foreach ($tables as $table) {
+            $rows = $xpath->query('.//tr', $table);
+            foreach ($rows as $row) {
+                $cells = $xpath->query('.//td | .//th', $row);
+                foreach ($cells as $cell) {
+                    $colspan = $cell->getAttribute('colspan');
+                    $rowspan = $cell->getAttribute('rowspan');
+                    if (!empty($colspan) && (int)$colspan > 1) {
+                        $issues[] = [
+                            'type' => 'table_merged_cells',
+                            'element' => 'table',
+                            'severity' => 'low',
+                            'description' => "Table has merged cells (colspan)",
+                        ];
+                        break 3; // Break out of all loops for this table
+                    }
+                    if (!empty($rowspan) && (int)$rowspan > 1) {
+                        $issues[] = [
+                            'type' => 'table_merged_cells',
+                            'element' => 'table',
+                            'severity' => 'low',
+                            'description' => "Table has merged cells (rowspan)",
+                        ];
+                        break 3; // Break out of all loops for this table
+                    }
+                }
+            }
+        }
+
+        // Check for tables missing proper headers (no th elements).
+        foreach ($tables as $table) {
+            $headers = $xpath->query('.//th', $table);
+            if ($headers->length === 0) {
+                $issues[] = [
+                    'type' => 'table_missing_headers',
+                    'element' => 'table',
+                    'severity' => 'low',
+                    'description' => "Table missing proper header row (th elements)",
+                ];
+            }
+        }
+
         return [
             'issues' => $issues,
             'total_count' => count($issues),
@@ -209,6 +266,9 @@ I have HTML content that needs to be fixed to meet WCAG AA standards. Please ana
 3. Suggest improvements for potential contrast issues
 4. Add labels to form inputs
 5. Ensure proper heading hierarchy
+6. Add captions to tables that are missing them
+7. Restructure tables with merged cells to use proper header associations
+8. Add proper header elements (th) to tables missing proper headers
 
 {$issue_summary}
 
@@ -220,6 +280,7 @@ IMPORTANT REQUIREMENTS:
 - Use semantic HTML5 elements where appropriate
 - Make alt text descriptive but concise (under 125 characters)
 - Make link text descriptive and meaningful
+- For tables: add caption elements, use proper semantic structure with <thead> for header rows, <tbody> for data rows, use th for headers with scope attributes, avoid merged cells
 - Preserve all existing functionality
 
 HTML content to fix:
@@ -269,6 +330,44 @@ PROMPT;
                 $prompt .= "Fix the following form input that is missing a label:\n\n";
                 $prompt .= "HTML snippet: {$issue['html_snippet']}\n\n";
                 $prompt .= "Add an appropriate label element with a descriptive for attribute.\n";
+                break;
+
+            case 'table_missing_caption':
+                $prompt .= "Fix the following table that is missing a caption:\n\n";
+                $prompt .= "HTML snippet: {$issue['html_snippet']}\n\n";
+                $prompt .= "Add a descriptive <caption> element to the table that summarizes the table's purpose or content.\n";
+                break;
+
+            case 'table_merged_cells':
+                $prompt .= "Fix the following table with merged cells (colspan/rowspan):\n\n";
+                $prompt .= "HTML snippet: {$issue['html_snippet']}\n\n";
+                $prompt .= "Restructure the table to avoid merged cells. Use proper header associations with scope attributes (scope='row' or scope='col') on <th> elements instead.\n";
+                break;
+
+            case 'table_missing_headers':
+                $prompt .= "Fix the following table that is missing proper header elements:\n\n";
+                $prompt .= "HTML snippet: {$issue['html_snippet']}\n\n";
+                $prompt .= "IMPORTANT: You MUST restructure the table as follows:\n";
+                $prompt .= "1. Move the first row into a <thead> element\n";
+                $prompt .= "2. Convert all cells in that first row from <td> to <th> elements\n";
+                $prompt .= "3. Add appropriate scope attributes to each <th> (scope='col' for column headers, scope='row' for row headers)\n";
+                $prompt .= "4. Ensure all remaining rows are within a <tbody> element\n";
+                $prompt .= "5. Keep all other attributes and styling\n\n";
+                $prompt .= "Example transformation:\n";
+                $prompt .= "<table>\n";
+                $prompt .= "  <thead>\n";
+                $prompt .= "    <tr>\n";
+                $prompt .= "      <th scope='col'>Header 1</th>\n";
+                $prompt .= "      <th scope='col'>Header 2</th>\n";
+                $prompt .= "    </tr>\n";
+                $prompt .= "  </thead>\n";
+                $prompt .= "  <tbody>\n";
+                $prompt .= "    <tr>\n";
+                $prompt .= "      <td>Data 1</td>\n";
+                $prompt .= "      <td>Data 2</td>\n";
+                $prompt .= "    </tr>\n";
+                $prompt .= "  </tbody>\n";
+                $prompt .= "</table>\n";
                 break;
 
             default:
