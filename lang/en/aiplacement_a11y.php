@@ -113,6 +113,16 @@ $string['table_merged_cells_desc'] = 'Tables with merged cells (colspan/rowspan)
 $string['table_missing_headers'] = 'Table missing proper headers';
 $string['table_missing_headers_desc'] = 'Tables should use th (table header) elements in the first row to define column headers, helping screen reader users understand the table structure.';
 
+// Heading accessibility issue strings.
+$string['heading_hierarchy_issue'] = 'Improper heading hierarchy';
+$string['heading_hierarchy_issue_desc'] = 'Headings should follow a proper hierarchy (h3, h4, h5, h6) without skipping levels. The first heading must be h3. Do not jump from h3 directly to h5.';
+$string['heading_too_long'] = 'Heading exceeds character limit';
+$string['heading_too_long_desc'] = 'Headings should not exceed 1000 characters. Very long headings may be difficult for screen reader users to navigate and understand.';
+
+// Unheaded content accessibility issue strings.
+$string['unheaded_content'] = 'Unorganized content without headings';
+$string['unheaded_content_desc'] = 'Content should be organized into logical sections using headings (h3, h4, h5, h6). Multiple paragraphs without headings can be confusing for screen reader users and makes content harder to navigate and understand.';
+
 // Privacy strings.
 $string['privacy:metadata:userid'] = 'The user ID of the person requesting accessibility fixes';
 $string['privacy:metadata:content'] = 'The HTML content being analyzed for accessibility issues';

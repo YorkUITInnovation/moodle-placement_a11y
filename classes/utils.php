@@ -233,6 +233,119 @@ class utils {
             }
         }
 
+        // Check for heading hierarchy (h3, h4, h5, h6 only).
+        $headings = $xpath->query('//h3 | //h4 | //h5 | //h6');
+        if ($headings->length > 0) {
+            $last_level = null;
+            $heading_stack = []; // Track hierarchy to detect issues
+
+            foreach ($headings as $heading) {
+                $tag_name = $heading->nodeName; // h3, h4, h5, or h6
+                $level = (int)substr($tag_name, 1); // Extract number from tag name
+                $content = trim($heading->textContent);
+                $html_snippet = $dom->saveHTML($heading);
+
+                // Check for character limit (1000+ characters).
+                if (strlen($content) > 1000) {
+                    $issues[] = [
+                        'type' => 'heading_too_long',
+                        'element' => $tag_name,
+                        'severity' => 'medium',
+                        'description' => "Heading contains over 1000 characters (found: " . strlen($content) . ")",
+                        'character_count' => strlen($content),
+                        'html_snippet' => $html_snippet,
+                    ];
+                }
+
+                // Check heading hierarchy.
+                if ($last_level !== null) {
+                    // If current level skips more than one level deeper, it's an issue.
+                    if ($level > $last_level + 1) {
+                        $issues[] = [
+                            'type' => 'heading_hierarchy_issue',
+                            'element' => $tag_name,
+                            'severity' => 'medium',
+                            'description' => "Heading hierarchy broken: jumped from <h{$last_level}> to <h{$level}>",
+                            'current_level' => $level,
+                            'expected_max_level' => $last_level + 1,
+                            'html_snippet' => $html_snippet,
+                        ];
+                    }
+                }
+
+                // If this is h3, it can be the first heading.
+                if ($level === 3 && $last_level === null) {
+                    $last_level = $level;
+                } else if ($last_level !== null) {
+                    $last_level = $level;
+                } else if ($level !== 3) {
+                    // First heading must be h3 (since h1 and h2 are never used).
+                    $issues[] = [
+                        'type' => 'heading_hierarchy_issue',
+                        'element' => $tag_name,
+                        'severity' => 'high',
+                        'description' => "Content must start with <h3> as the first heading (h1 and h2 are not used)",
+                        'current_level' => $level,
+                        'expected_level' => 3,
+                        'html_snippet' => $html_snippet,
+                    ];
+                    $last_level = $level;
+                }
+            }
+        }
+
+        // Check for unorganized content - paragraphs and other content without headings.
+        // Get all heading and paragraph/div elements in document order.
+        $all_content = $xpath->query('//h3 | //h4 | //h5 | //h6 | //p[not(ancestor::table)] | //div[not(ancestor::table)]');
+
+        if ($all_content->length > 0) {
+            $unheaded_text = '';
+            $unheaded_elements = [];
+
+            foreach ($all_content as $element) {
+                $tag_name = $element->nodeName;
+
+                // If we encounter a heading, we've organized our content so far.
+                if (in_array($tag_name, ['h3', 'h4', 'h5', 'h6'])) {
+                    // If we have accumulated unheaded content, report it.
+                    if (strlen($unheaded_text) > 500 && count($unheaded_elements) > 0) {
+                        $first_element = $unheaded_elements[0];
+                        $issues[] = [
+                            'type' => 'unheaded_content',
+                            'element' => 'p/div',
+                            'severity' => 'medium',
+                            'description' => "Found " . strlen($unheaded_text) . " characters of content without a heading to organize it. Content should be grouped under appropriate headings (h3, h4, h5, or h6).",
+                            'character_count' => strlen($unheaded_text),
+                            'html_snippet' => $dom->saveHTML($first_element),
+                        ];
+                    }
+                    // Reset for next section.
+                    $unheaded_text = '';
+                    $unheaded_elements = [];
+                } else {
+                    // This is a p or div - add to unheaded content.
+                    $text = trim($element->textContent);
+                    if (!empty($text)) {
+                        $unheaded_text .= $text . "\n";
+                        $unheaded_elements[] = $element;
+                    }
+                }
+            }
+
+            // Check if there's unheaded content at the end of the document.
+            if (strlen($unheaded_text) > 500 && count($unheaded_elements) > 0) {
+                $first_element = $unheaded_elements[0];
+                $issues[] = [
+                    'type' => 'unheaded_content',
+                    'element' => 'p/div',
+                    'severity' => 'medium',
+                    'description' => "Found " . strlen($unheaded_text) . " characters of content without a heading to organize it. Content should be grouped under appropriate headings (h3, h4, h5, or h6).",
+                    'character_count' => strlen($unheaded_text),
+                    'html_snippet' => $dom->saveHTML($first_element),
+                ];
+            }
+        }
+
         return [
             'issues' => $issues,
             'total_count' => count($issues),
@@ -263,12 +376,21 @@ I have HTML content that needs to be fixed to meet WCAG AA standards. Please ana
 
 1. Add missing alt text to all images (meaningful descriptions)
 2. Improve weak link text to be more descriptive
-3. Suggest improvements for potential contrast issues
+3. Fix color contrast issues - MAXIMIZE contrast by using high-contrast color combinations:
+   - Black text (#000000) on white background (#FFFFFF) - Ratio: 21:1 (WCAG AAA)
+   - White text (#FFFFFF) on black background (#000000) - Ratio: 21:1 (WCAG AAA)
+   - Dark text on light backgrounds for body text (aim for 7:1 or higher ratio)
+   - Light text on dark backgrounds for headings (aim for 7:1 or higher ratio)
+   - Never use colors with ratios just barely above 4.5:1 - prioritize maximum contrast
 4. Add labels to form inputs
-5. Ensure proper heading hierarchy
+5. Ensure proper heading hierarchy (h3, h4, h5, h6 only - h1 and h2 are not used)
+   - First heading must be h3
+   - Do not skip heading levels (e.g., don't jump from h3 to h5)
+   - Keep headings under 1000 characters
 6. Add captions to tables that are missing them
 7. Restructure tables with merged cells to use proper header associations
 8. Add proper header elements (th) to tables missing proper headers
+9. Organize any unheaded content blocks by adding appropriate h3, h4, h5, or h6 headings to group related paragraphs
 
 {$issue_summary}
 
@@ -280,7 +402,10 @@ IMPORTANT REQUIREMENTS:
 - Use semantic HTML5 elements where appropriate
 - Make alt text descriptive but concise (under 125 characters)
 - Make link text descriptive and meaningful
+- For contrast: Always maximize contrast using proven high-contrast combinations. Aim for 7:1+ ratio (WCAG AAA), not just 4.5:1 minimum
 - For tables: add caption elements, use proper semantic structure with <thead> for header rows, <tbody> for data rows, use th for headers with scope attributes, avoid merged cells
+- For headings: ensure proper hierarchy starting with h3, no level skipping, keep text under 1000 characters
+- For unheaded content: add descriptive h3/h4/h5/h6 headings to organize content into logical sections. Do NOT remove paragraphs, only ADD headings.
 - Preserve all existing functionality
 
 HTML content to fix:
@@ -322,8 +447,22 @@ PROMPT;
                 $prompt .= "Fix the following element with insufficient color contrast:\n\n";
                 $prompt .= "HTML snippet: {$issue['html_snippet']}\n";
                 $prompt .= "Current contrast ratio: {$issue['contrast_ratio']}:1\n";
-                $prompt .= "Required: 4.5:1 (WCAG AA)\n\n";
-                $prompt .= "Adjust the color or background-color to meet WCAG AA standards.\n";
+                $prompt .= "Current foreground color: {$issue['color']}\n";
+                $prompt .= "Current background color: {$issue['background']}\n";
+                $prompt .= "Required minimum: 4.5:1 (WCAG AA standard)\n\n";
+                $prompt .= "CRITICAL: Maximize contrast to improve accessibility beyond minimum requirements.\n";
+                $prompt .= "Preferred approach:\n";
+                $prompt .= "- If text is dark, use pure white background (#FFFFFF)\n";
+                $prompt .= "- If text is light, use pure black or very dark gray background (#000000 or #1a1a1a)\n";
+                $prompt .= "- Aim for a contrast ratio of 7:1 or higher (WCAG AAA standard)\n";
+                $prompt .= "- Use one of these proven high-contrast combinations:\n";
+                $prompt .= "  * Black text (#000000) on white background (#FFFFFF) - Ratio: 21:1\n";
+                $prompt .= "  * White text (#FFFFFF) on black background (#000000) - Ratio: 21:1\n";
+                $prompt .= "  * Dark blue (#003366) on yellow (#FFFF00) - Ratio: 19.56:1\n";
+                $prompt .= "  * Dark text on light background is generally better for body text\n";
+                $prompt .= "  * Light text on dark background is acceptable for headings\n\n";
+                $prompt .= "Modify the inline style attribute to adjust ONLY the foreground color or background-color (whichever provides better contrast).\n";
+                $prompt .= "Do NOT change both simultaneously - pick one and adjust it for maximum contrast.\n";
                 break;
 
             case 'missing_form_label':
@@ -368,6 +507,51 @@ PROMPT;
                 $prompt .= "    </tr>\n";
                 $prompt .= "  </tbody>\n";
                 $prompt .= "</table>\n";
+                break;
+
+            case 'heading_hierarchy_issue':
+                $prompt .= "Fix the following heading hierarchy issue:\n\n";
+                $prompt .= "Problem: {$issue['description']}\n";
+                $prompt .= "HTML snippet: {$issue['html_snippet']}\n\n";
+
+                if (isset($issue['expected_level'])) {
+                    $prompt .= "NOTE: The first heading in content must be <h3> (since h1 and h2 are not used in this context).\n";
+                    $prompt .= "Current heading level: {$issue['current_level']}\n";
+                    $prompt .= "Expected level: {$issue['expected_level']}\n\n";
+                    $prompt .= "Please replace this heading with <h3> instead.\n";
+                } else {
+                    $prompt .= "Current heading level: <h{$issue['current_level']}>\n";
+                    $prompt .= "Maximum allowed jump: 1 level deeper than the previous heading\n";
+                    $prompt .= "Expected maximum level: <h{$issue['expected_max_level']}>\n\n";
+                    $prompt .= "Please restructure the headings to maintain proper hierarchy. ";
+                    $prompt .= "Replace this <h{$issue['current_level']}> with the appropriate heading level (up to <h{$issue['expected_max_level']}>).\n";
+                }
+                break;
+
+            case 'heading_too_long':
+                $prompt .= "Fix the following heading that exceeds the 1000 character limit:\n\n";
+                $prompt .= "Current character count: {$issue['character_count']}\n";
+                $prompt .= "Maximum allowed: 1000 characters\n";
+                $prompt .= "HTML snippet: {$issue['html_snippet']}\n\n";
+                $prompt .= "Please shorten the heading text to be under 1000 characters while maintaining its meaning and clarity.\n";
+                break;
+
+            case 'unheaded_content':
+                $prompt .= "Fix the following issue: Content without proper heading organization.\n\n";
+                $prompt .= "Problem: Found " . $issue['character_count'] . " characters of content without a heading to organize it.\n";
+                $prompt .= "Location: {$issue['html_snippet']}\n\n";
+                $prompt .= "IMPORTANT: You MUST add appropriate <h3>, <h4>, <h5>, or <h6> headings to organize this content into logical sections.\n";
+                $prompt .= "Guidelines:\n";
+                $prompt .= "- Group related paragraphs under descriptive headings\n";
+                $prompt .= "- Use h3 for major sections, h4 for subsections, etc.\n";
+                $prompt .= "- Maintain proper heading hierarchy (no level skipping)\n";
+                $prompt .= "- Each heading should describe the content that follows it\n";
+                $prompt .= "- Do NOT remove any content, only ADD headings to organize it\n\n";
+                $prompt .= "Example structure:\n";
+                $prompt .= "<h3>Main Topic</h3>\n";
+                $prompt .= "<p>Content about the main topic...</p>\n";
+                $prompt .= "<h4>Subtopic</h4>\n";
+                $prompt .= "<p>Content about the subtopic...</p>\n";
                 break;
 
             default:
