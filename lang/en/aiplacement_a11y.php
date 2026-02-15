@@ -83,6 +83,7 @@ $string['fixed'] = 'Fixed';
 $string['acceptchanges'] = 'Accept Changes';
 $string['rejectchanges'] = 'Reject Changes';
 $string['preview'] = 'Preview';
+$string['showme'] = 'Show me where!';
 $string['fixissue'] = 'Fix';
 $string['suggestedfix'] = 'Suggested Fix';
 $string['gettingsuggestion'] = 'Getting suggestion...';

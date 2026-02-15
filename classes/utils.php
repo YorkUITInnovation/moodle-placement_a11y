@@ -74,6 +74,9 @@ class utils {
 
         $xpath = new \DOMXPath($dom);
 
+        // Track occurrence counts for elements to handle duplicates
+        $elementOccurrences = [];
+
         // Check for images without alt text.
         $images = $xpath->query('//img');
         foreach ($images as $img) {
@@ -116,6 +119,7 @@ class utils {
 
         // Check for color contrast issues.
         $elements_with_style = $xpath->query('//*[@style]');
+        $contrastElementCount = [];
         foreach ($elements_with_style as $elem) {
             $style = $elem->getAttribute('style');
             $text = trim($elem->textContent);
@@ -142,9 +146,15 @@ class utils {
                 // We'll use 4.5:1 as the threshold.
                 if ($contrast_ratio < 4.5) {
                     $html_snippet = $dom->saveHTML($elem);
+                    $tagName = $elem->nodeName;
+
+                    // Track occurrence count for this element type
+                    $contrastElementCount[$tagName] = ($contrastElementCount[$tagName] ?? 0) + 1;
+
                     $issues[] = [
                         'type' => 'contrast_issue',
-                        'element' => $elem->nodeName,
+                        'element' => $tagName,
+                        'element_occurrence' => $contrastElementCount[$tagName],
                         'severity' => 'high',
                         'color' => $color,
                         'background' => $bgcolor,

@@ -58,7 +58,15 @@
 
             {{#html_snippet}}
                 <div class="issue-preview">
-                    <div class="preview-label">{{#str}}preview, aiplacement_a11y{{/str}}:</div>
+                    <div class="preview-label-row">
+                        <span class="preview-label">{{#str}}preview, aiplacement_a11y{{/str}}:</span>
+                        <button class="btn btn-sm btn-secondary show-where-btn"
+                                data-issue-index="{{index}}"
+                                data-issue-type="{{type}}"
+                                aria-label="Show location in preview">
+                            {{#str}}showme, aiplacement_a11y{{/str}}
+                        </button>
+                    </div>
                     <div class="preview-content">
                         {{{html_snippet}}}
                     </div>
