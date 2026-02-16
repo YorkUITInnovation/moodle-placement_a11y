@@ -11,7 +11,7 @@ The **Accessibility Fixer** is a Moodle 5.1 AI placement plugin that integrates 
 > [!IMPORTANT]
 > **AI Provider Compatibility Notice**  
 > Currently, only **Azure-based AI providers** have been fully tested with this plugin.  
-> Support for **DeepSeek**, **OpenAI**, and **Ollama** providers is included but has **not been tested yet**.  
+> Support for **DeepSeek** and **OpenAI** providers is included but has **not been tested yet**.  
 > If you encounter issues with these providers, please report them on the plugin's issue tracker.
 
 ## Features
@@ -92,7 +92,7 @@ ai/placement/a11y/
 │       ├── AIProvider.php               # Base AI provider interface
 │       ├── AzureProvider.php            # Azure AI provider (✅ Tested)
 │       ├── DeepSeekProvider.php         # DeepSeek provider (⚠️ Not tested)
-│       ├── OllamaProvider.php           # Ollama provider (⚠️ Not tested)
+│       ├── OllamaProvider.php           # Ollama provider (✅ Tested)
 │       ├── OpenAIProvider.php           # OpenAI provider (⚠️ Not tested)
 │       └── ProviderFactory.php          # Provider factory class
 ├── db/
@@ -147,7 +147,7 @@ ai/placement/a11y/
 
 5. **Configure AI Provider**:
    - Ensure you have an AI provider configured (Azure AI is recommended and fully tested)
-   - Other providers (OpenAI, DeepSeek, Ollama) are supported but not yet tested
+   - Other providers (OpenAI, DeepSeek, Ollama) are supported but not yet all tested
    - The plugin uses the provider's Generate Text capability
 
 ## How It Works
@@ -363,7 +363,7 @@ Allows users to use the Accessibility Fixer tool within the HTML editor.
    - **Azure AI** (✅ Tested and recommended)
    - **OpenAI** (⚠️ Not yet tested)
    - **DeepSeek** (⚠️ Not yet tested)
-   - **Ollama** (⚠️ Not yet tested)
+   - **Ollama** (✅ Tested)
 4. **Generate Text action enabled** on provider
 5. **AI Tools enabled** in course settings
 6. **User capability** `aiplacement/a11y:use`
