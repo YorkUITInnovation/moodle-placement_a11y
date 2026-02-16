@@ -126,8 +126,9 @@ class OllamaProvider extends AIProvider {
         // Extract base64 data from data URI if present.
         $image_data = $image_base64;
         if (strpos($image_base64, 'base64,') !== false) {
-            [$image_data] = explode('base64,', $image_base64);
-            $image_data = array_pop(explode(',', $image_base64));
+            // Extract just the base64 part after 'base64,'
+            $parts = explode('base64,', $image_base64);
+            $image_data = $parts[1] ?? $image_base64;
         }
 
         // Ollama API endpoint.
@@ -209,16 +210,20 @@ class OllamaProvider extends AIProvider {
      */
     private function get_endpoint(): string {
         // Try to get endpoint from config.
-        if (!empty($this->provider_instance->config['endpoint'])) {
-            return $this->provider_instance->config['endpoint'];
+        if (isset($this->provider_instance->config) && is_array($this->provider_instance->config)) {
+            if (!empty($this->provider_instance->config['endpoint'])) {
+                return $this->provider_instance->config['endpoint'];
+            }
         }
 
         // Try to get from action config as fallback.
-        foreach ($this->provider_instance->actionconfig as $key => $action_config) {
-            if ($key == 'core_ai\aiactions\generate_text') {
-                $endpoint = $this->provider_instance->actionconfig[$key]['settings']['endpoint'] ?? '';
-                if (!empty($endpoint)) {
-                    return $endpoint;
+        if (isset($this->provider_instance->actionconfig) && is_array($this->provider_instance->actionconfig)) {
+            foreach ($this->provider_instance->actionconfig as $key => $action_config) {
+                if ($key == 'core_ai\aiactions\generate_text') {
+                    $endpoint = $action_config['settings']['endpoint'] ?? '';
+                    if (!empty($endpoint)) {
+                        return $endpoint;
+                    }
                 }
             }
         }
@@ -234,17 +239,19 @@ class OllamaProvider extends AIProvider {
      */
     private function get_model(): string {
         // Try to get model from action config.
-        foreach ($this->provider_instance->actionconfig as $key => $action_config) {
-            if ($key == 'core_ai\aiactions\generate_text') {
-                $model = $this->provider_instance->actionconfig[$key]['settings']['model'] ?? '';
-                if (!empty($model)) {
-                    return $model;
+        if (isset($this->provider_instance->actionconfig) && is_array($this->provider_instance->actionconfig)) {
+            foreach ($this->provider_instance->actionconfig as $key => $action_config) {
+                if ($key == 'core_ai\aiactions\generate_text') {
+                    $model = $action_config['settings']['model'] ?? '';
+                    if (!empty($model)) {
+                        return $model;
+                    }
                 }
             }
         }
 
-        // Fallback to common model name.
-        return 'llama2';
+        // Return empty string - is_configured() will return false
+        return '';
     }
 
     /**

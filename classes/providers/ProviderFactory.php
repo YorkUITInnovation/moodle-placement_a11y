@@ -92,7 +92,12 @@ class ProviderFactory {
             throw new \moodle_exception('providernrtfound', 'aiplacement_a11y', '', $type);
         }
 
-        $provider = new $class_name($provider_instance);
+        try {
+            $provider = new $class_name($provider_instance);
+        } catch (\Exception $e) {
+            $error_details = $type . ': ' . $e->getMessage();
+            throw new \moodle_exception('providernotproperlyconfigured', 'aiplacement_a11y', '', $error_details);
+        }
 
         if (!$provider->is_configured()) {
             throw new \moodle_exception('providernotproperlyconfigured', 'aiplacement_a11y', '', $provider->get_name());
