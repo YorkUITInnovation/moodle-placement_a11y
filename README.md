@@ -4,9 +4,15 @@
 
 The **Accessibility Fixer** is a Moodle 5.1 AI placement plugin that integrates WCAG AA accessibility checking and AI-powered fixing directly into the HTML text editor. It analyzes content in real-time and uses AI to automatically suggest and apply fixes for common accessibility issues.
 
-**Version:** 1.4.0  
-**Maturity:** Alpha  
+**Version:** 0.8.1  
+**Maturity:** Beta  
 **Requires:** Moodle 5.1+
+
+> [!IMPORTANT]
+> **AI Provider Compatibility Notice**  
+> Currently, only **Azure-based AI providers** have been fully tested with this plugin.  
+> Support for **DeepSeek**, **OpenAI**, and **Ollama** providers is included but has **not been tested yet**.  
+> If you encounter issues with these providers, please report them on the plugin's issue tracker.
 
 ## Features
 
@@ -80,15 +86,24 @@ ai/placement/a11y/
 │   │   └── get_suggestion.php           # AI suggestion web service
 │   ├── form/
 │   │   └── fix_accessibility_form.php   # Form definitions
-│   └── privacy/
-│       └── provider.php                 # Privacy API implementation
+│   ├── privacy/
+│   │   └── provider.php                 # Privacy API implementation
+│   └── providers/
+│       ├── AIProvider.php               # Base AI provider interface
+│       ├── AzureProvider.php            # Azure AI provider (✅ Tested)
+│       ├── DeepSeekProvider.php         # DeepSeek provider (⚠️ Not tested)
+│       ├── OllamaProvider.php           # Ollama provider (⚠️ Not tested)
+│       ├── OpenAIProvider.php           # OpenAI provider (⚠️ Not tested)
+│       └── ProviderFactory.php          # Provider factory class
 ├── db/
 │   ├── access.php                       # Capability definitions
 │   ├── hooks.php                        # Hook registrations
 │   └── services.php                     # Web service definitions
 ├── lang/
-│   └── en/
-│       └── aiplacement_a11y.php         # English language strings
+│   ├── en/
+│   │   └── aiplacement_a11y.php         # English language strings
+│   └── fr/
+│       └── aiplacement_a11y.php         # French language strings
 ├── templates/
 │   ├── analysis_report.mustache         # Issue list with fix buttons
 │   └── fix_accessibility_results.mustache # Comparison view template
@@ -110,22 +125,29 @@ ai/placement/a11y/
 
 ## Installation
 
-1. **Copy plugin to correct location**:
+1. **Install the TinyMCE editor plugin (required)**:
+   ```bash
+   cd /path/to/moodle/lib/editor/tiny/plugins
+   git clone https://github.com/YorkUITInnovation/moodle-tiny_a11yfix.git a11yfix
+   ```
+
+2. **Copy AI placement plugin to correct location**:
    ```bash
    cp -r ai/placement/a11y /path/to/moodle/public/ai/placement/a11y
    ```
 
-2. **Run upgrade**:
+3. **Run upgrade**:
    ```bash
    php admin/cli/upgrade.php
    ```
 
-3. **Enable the plugin**:
+4. **Enable the plugin**:
    - Navigate to **Admin > Plugins > AI Features > Placements**
    - Find "Accessibility Fixer" and enable it
 
-4. **Configure AI Provider**:
-   - Ensure you have an AI provider configured (e.g., OpenAI, Azure AI)
+5. **Configure AI Provider**:
+   - Ensure you have an AI provider configured (Azure AI is recommended and fully tested)
+   - Other providers (OpenAI, DeepSeek, Ollama) are supported but not yet tested
    - The plugin uses the provider's Generate Text capability
 
 ## How It Works
@@ -165,7 +187,7 @@ ai/placement/a11y/
 ┌─────────────────────────────────────────────────────────────────┐
 │  5. AI Processing                                                │
 │     - Builds detailed prompt with issue context                  │
-│     - Sends to configured AI provider (OpenAI/Azure)             │
+│     - Sends to configured AI provider                            │
 │     - For images: Uses vision API to generate alt text           │
 │     - Returns fixed HTML                                         │
 └─────────────────────────────────────────────────────────────────┘
@@ -290,13 +312,34 @@ Retrieves plugin settings for JavaScript.
 | `heading_too_long` | h3-h6 | Shorten heading while maintaining meaning |
 | `unheaded_content` | p/div | Add appropriate h3-h6 headings to organize content |
 
-## Permissions
+## Capabilities
 
-### Capability: `aiplacement/a11y:use`
+This plugin defines a single capability:
 
-- **Context**: Course level
-- **Default roles**: Student, Teacher, Editing Teacher
-- **Permission type**: Write
+### aiplacement/a11y:use
+
+Allows users to use the Accessibility Fixer tool within the HTML editor.
+
+| Property | Value |
+|----------|-------|
+| **Type** | Write (`captype => 'write'`) |
+| **Context Level** | Course (`CONTEXT_COURSE`) |
+| **Cloned From** | `moodle/course:view` |
+
+**Default Role Assignments:**
+
+| Role | Permission |
+|------|------------|
+| Student | Allowed |
+| Teacher | Allowed |
+| Editing Teacher | Allowed |
+| Manager | Inherited (allowed via `moodle/course:view`) |
+| Admin | Allowed |
+
+**Notes:**
+- This capability is granted at the course level
+- Users must also have access to the course where they are editing content
+- The capability inherits permissions from `moodle/course:view` by default
 
 ## Privacy & Data
 
@@ -313,10 +356,17 @@ Retrieves plugin settings for JavaScript.
 ## Requirements
 
 1. **Moodle 5.1+** with AI subsystem enabled
-2. **AI Provider configured** (OpenAI, Azure AI, etc.)
-3. **Generate Text action enabled** on provider
-4. **AI Tools enabled** in course settings
-5. **User capability** `aiplacement/a11y:use`
+2. **TinyMCE Editor Plugin** - The **tiny_a11yfix** plugin is required to add the accessibility fixer button to the editor toolbar
+   - Download from: [https://github.com/YorkUITInnovation/moodle-tiny_a11yfix](https://github.com/YorkUITInnovation/moodle-tiny_a11yfix)
+   - Install to: `/lib/editor/tiny/plugins/a11yfix/`
+3. **AI Provider configured** - Supported providers include:
+   - **Azure AI** (✅ Tested and recommended)
+   - **OpenAI** (⚠️ Not yet tested)
+   - **DeepSeek** (⚠️ Not yet tested)
+   - **Ollama** (⚠️ Not yet tested)
+4. **Generate Text action enabled** on provider
+5. **AI Tools enabled** in course settings
+6. **User capability** `aiplacement/a11y:use`
 
 ## Testing
 
