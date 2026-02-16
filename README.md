@@ -366,8 +366,7 @@ Allows users to use the Accessibility Fixer tool within the HTML editor.
    - **DeepSeek** (⚠️ Not yet tested)
    - **Ollama** (⚠️ Partially tested - Connects successfully but not fully tested for fixing issues. Not recommended for production use.)
 4. **Generate Text action enabled** on provider
-5. **AI Tools enabled** in course settings
-6. **User capability** `aiplacement/a11y:use`
+5. **User capability** `aiplacement/a11y:use`
 
 ## Testing
 
