@@ -49,6 +49,26 @@ if ($hassiteconfig) {
         new \lang_string('requirements_desc', 'aiplacement_a11y')
     ));
 
+    // AI Provider selection.
+    $settings->add(new \admin_setting_heading(
+        'aiplacement_a11y/provider',
+        new \lang_string('aiprovider', 'aiplacement_a11y'),
+        new \lang_string('aiprovider_desc', 'aiplacement_a11y')
+    ));
+
+    // Get available providers for dropdown.
+    $provider_options = \aiplacement_a11y\providers\ProviderFactory::get_available_provider_list();
+
+    if (!empty($provider_options)) {
+        $settings->add(new \admin_setting_configselect(
+            'aiplacement_a11y/preferred_provider',
+            new \lang_string('preferred_provider', 'aiplacement_a11y'),
+            new \lang_string('preferred_provider_desc', 'aiplacement_a11y'),
+            '', // No default - will use first available.
+            $provider_options
+        ));
+    }
+
     // Auto-check settings.
     $settings->add(new \admin_setting_heading(
         'aiplacement_a11y/autocheck',

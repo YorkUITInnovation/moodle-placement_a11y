@@ -60,6 +60,12 @@ $string['requirements_desc'] = '<strong>To use this placement plugin, you need:<
 $string['fixaccessibility'] = 'Fix Accessibility';
 $string['fixaccessibility_desc'] = 'Analyzes and fixes WCAG AA accessibility issues in HTML content';
 
+// Provider settings.
+$string['aiprovider'] = 'AI Provider';
+$string['aiprovider_desc'] = 'Select which AI provider to use for accessibility fixes. The plugin will automatically detect and use available providers configured in your Moodle instance. If no provider is selected, the first available provider will be used.';
+$string['preferred_provider'] = 'Preferred Provider';
+$string['preferred_provider_desc'] = 'Choose which AI provider to prefer. If not available, the plugin will use the first available provider in this order: Azure, OpenAI, DeepSeek, Ollama.';
+
 // Error strings.
 $string['noaccessibilityissues'] = 'No accessibility issues found. Content meets WCAG AA standards.';
 $string['invalidhtml'] = 'Invalid HTML content provided';
@@ -69,6 +75,14 @@ $string['ainotenabledincourse'] = 'AI tools are not enabled in this course';
 $string['invalidissuedata'] = 'Invalid issue data provided';
 $string['noimagesource'] = 'No image source found in issue data';
 $string['cannotaccessimage'] = 'Cannot access image for processing. The image may not be publicly accessible.';
+$string['noaiprovidersconfigured'] = 'No AI providers are configured. Please configure at least one AI provider in Site Administration > AI Features > Providers.';
+$string['providernrtconfigured'] = 'AI provider "{$a}" is not configured. Please configure it in Site Administration > AI Features > Providers.';
+$string['providernrtfound'] = 'AI provider "{$a}" is not supported by this plugin.';
+$string['providernotproperlyconfigured'] = 'AI provider "{$a}" is not properly configured. Please check the provider settings in Site Administration > AI Features > Providers.';
+$string['azurenotconfigured'] = 'Azure OpenAI provider is not configured.';
+$string['openainotconfigured'] = 'OpenAI provider is not configured.';
+$string['deepseeknotconfigured'] = 'DeepSeek provider is not configured.';
+$string['ollamanotconfigured'] = 'Ollama provider is not configured.';
 
 // Report strings.
 $string['a11yreport'] = 'Accessibility Analysis Report';

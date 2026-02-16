@@ -114,17 +114,38 @@ class get_suggestion extends external_api {
         $utils = new \aiplacement_a11y\utils();
 
         try {
-            // Build the suggestion prompt.
-            $prompt = $utils->build_suggestion_prompt($htmlcontent, $issuetype, $issue);
-
-            // For images, use vision API.
+            // For images, use vision API with vision-specific prompt.
             $usevision = ($issuetype === 'missing_alt_text');
 
             if ($usevision && !empty($imagedata)) {
-                $suggestion = $utils->get_image_suggestion_with_vision($htmlcontent, $issue, $imagedata);
+                // Use vision-specific prompt that focuses on describing the image.
+                $prompt = $utils->build_vision_alt_text_prompt();
+
+                // Get suggestion from AI with vision capability.
+                $response = $utils->call_ai_provider_with_vision($prompt, $imagedata);
+
+                // Parse JSON response.
+                $suggestion = json_decode($response, true);
+                if ($suggestion === null || !isset($suggestion['reasoning']) || !isset($suggestion['suggested_html'])) {
+                    // If not JSON, treat response as alt text.
+                    $alttext = trim($response);
+                    if (strlen($alttext) > 125) {
+                        $alttext = substr($alttext, 0, 122) . '...';
+                    }
+                    $suggestion = [
+                        'reasoning' => 'Images without alt text are inaccessible to screen reader users. WCAG 2.1 Level A requires all non-decorative images to have alternative text.',
+                        'suggested_html' => $alttext,
+                    ];
+                }
+
+                // Use specialized alt text sanitization to ensure plain text.
+                $suggestion = $utils->sanitize_alt_text_suggestion($suggestion);
             } else {
-                // Get suggestion from AI.
-                $response = $utils->fix_with_direct_azure_call($prompt);
+                // Build standard suggestion prompt for non-image issues.
+                $prompt = $utils->build_suggestion_prompt($htmlcontent, $issuetype, $issue);
+
+                // Get suggestion from AI provider.
+                $response = $utils->call_ai_provider($prompt);
 
                 // Parse JSON response.
                 $suggestion = json_decode($response, true);
@@ -132,10 +153,10 @@ class get_suggestion extends external_api {
                     // If not JSON, try to extract from text response.
                     $suggestion = $utils->parse_suggestion_from_text($response, $htmlcontent, $issue);
                 }
-            }
 
-            // Sanitize and validate the suggestion before returning.
-            $suggestion = $utils->sanitize_suggestion($suggestion);
+                // Sanitize and validate the suggestion before returning.
+                $suggestion = $utils->sanitize_suggestion($suggestion);
+            }
 
             return [
                 'success' => true,

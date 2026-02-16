@@ -126,19 +126,46 @@ class fix_single_issue extends external_api {
         $utils = new \aiplacement_a11y\utils();
 
         try {
-            // Build the prompt based on issue type.
-            $prompt = $utils->build_single_issue_fix_prompt($htmlcontent, $issuetype, $issue);
-
             // For images, check if we need vision capability.
             $usevision = ($issuetype === 'missing_alt_text');
 
-            if ($usevision) {
-                // Use vision model for image description.
-                // Pass the base64 image data from JavaScript instead of fetching by URL.
-                $fixedcontent = $utils->fix_image_with_vision_base64($htmlcontent, $issue, $imagedata, $context, $USER->id);
+            if ($usevision && !empty($imagedata)) {
+                // Use vision-specific prompt to generate alt text.
+                $prompt = $utils->build_vision_alt_text_prompt();
+
+                // Call AI with vision capability.
+                $response = $utils->call_ai_provider_with_vision($prompt, $imagedata);
+
+                // Parse JSON response to get alt text.
+                $suggestion = json_decode($response, true);
+                $alttext = '';
+                if ($suggestion !== null && isset($suggestion['suggested_html'])) {
+                    $alttext = trim($suggestion['suggested_html']);
+                } else {
+                    // Treat entire response as alt text.
+                    $alttext = trim($response);
+                }
+
+                // Ensure alt text is not HTML.
+                if (strpos($alttext, '<') !== false) {
+                    // Try to extract just text from any accidental HTML.
+                    $alttext = strip_tags($alttext);
+                }
+
+                // Limit to 125 characters.
+                if (strlen($alttext) > 125) {
+                    $alttext = substr($alttext, 0, 122) . '...';
+                }
+
+                // Replace the image alt text in the HTML content.
+                $imgsrc = $issue['src'] ?? '';
+                $fixedcontent = $utils->replace_image_alt_in_html($htmlcontent, $imgsrc, $alttext);
             } else {
-                // Use direct Azure API call for other issues (same method as vision).
-                $fixedcontent = $utils->fix_with_direct_azure_call($prompt);
+                // Build the prompt based on issue type.
+                $prompt = $utils->build_single_issue_fix_prompt($htmlcontent, $issuetype, $issue);
+
+                // Use selected AI provider for other issues.
+                $fixedcontent = $utils->call_ai_provider($prompt);
             }
 
             // Validate the fixed content.

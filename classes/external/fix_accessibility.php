@@ -123,8 +123,8 @@ class fix_accessibility extends external_api {
         $prompt = $utils->build_accessibility_fix_prompt($htmlcontent, $analysis);
 
         try {
-            // Use direct Azure API call (same method as single issue fixes).
-            $fixed_content = $utils->fix_with_direct_azure_call($prompt);
+            // Use selected AI provider to fix the content.
+            $fixed_content = $utils->call_ai_provider($prompt);
 
             // Validate the fixed content is valid HTML.
             if (!$utils->is_valid_html($fixed_content)) {

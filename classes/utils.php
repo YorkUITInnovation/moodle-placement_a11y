@@ -28,6 +28,44 @@ namespace aiplacement_a11y;
 class utils {
 
     /**
+     * Get AI provider instance for fixing content.
+     *
+     * Uses ProviderFactory to automatically detect and return the appropriate
+     * AI provider based on available configuration.
+     *
+     * @return \aiplacement_a11y\providers\AIProvider The AI provider.
+     * @throws \moodle_exception If no providers are available.
+     */
+    public function get_provider(): \aiplacement_a11y\providers\AIProvider {
+        return \aiplacement_a11y\providers\ProviderFactory::get_selected_provider();
+    }
+
+    /**
+     * Call AI provider to generate content from a prompt.
+     *
+     * @param string $prompt The prompt to send to AI.
+     * @return string The AI-generated response.
+     * @throws \moodle_exception
+     */
+    public function call_ai_provider(string $prompt): string {
+        $provider = $this->get_provider();
+        return $provider->call($prompt);
+    }
+
+    /**
+     * Call AI provider with vision capability (image analysis).
+     *
+     * @param string $prompt The prompt to send to AI.
+     * @param string $image_base64 Base64-encoded image data with data URI scheme.
+     * @return string The AI-generated response.
+     * @throws \moodle_exception
+     */
+    public function call_ai_provider_with_vision(string $prompt, string $image_base64): string {
+        $provider = $this->get_provider();
+        return $provider->call_with_vision($prompt, $image_base64);
+    }
+
+    /**
      * Check if HTML content is valid.
      *
      * @param string $html The HTML content to validate.
@@ -1173,6 +1211,20 @@ PROMPT;
     }
 
     /**
+     * Replace the alt text for a specific image in HTML content.
+     *
+     * Public wrapper for replace_image_alt_text for use by external classes.
+     *
+     * @param string $html The HTML content.
+     * @param string $imgsrc The image source to find.
+     * @param string $alttext The new alt text.
+     * @return string The updated HTML.
+     */
+    public function replace_image_alt_in_html(string $html, string $imgsrc, string $alttext): string {
+        return $this->replace_image_alt_text($html, $imgsrc, $alttext);
+    }
+
+    /**
      * Build prompt for getting AI suggestion with reasoning.
      *
      * @param string $html The HTML content.
@@ -1183,17 +1235,66 @@ PROMPT;
     public function build_suggestion_prompt(string $html, string $issuetype, array $issue): string {
         $prompt = "You are an accessibility expert. Analyze this accessibility issue and provide a detailed suggestion.\n\n";
 
-        $prompt .= "HTML Content:\n" . $html . "\n\n";
+        // For image alt text, don't include the full HTML - just the image element
+        if ($issuetype === 'missing_alt_text') {
+            $prompt .= "Image Element:\n" . ($issue['html_snippet'] ?? '') . "\n\n";
+        } else {
+            $prompt .= "HTML Content:\n" . $html . "\n\n";
+        }
 
         $prompt .= "Issue Type: " . $issuetype . "\n";
         $prompt .= "Issue Details: " . json_encode($issue) . "\n\n";
 
         $prompt .= "Provide your response in JSON format with these keys:\n";
         $prompt .= "1. reasoning: Explain WHY this is an accessibility problem. Reference WCAG 2.1 guidelines and explain the impact on users with disabilities.\n";
-        $prompt .= "2. suggested_html: Provide ONLY the fixed HTML element (not the entire document). Make it ready to replace the problematic element.\n\n";
+
+        if ($issuetype === 'missing_alt_text') {
+            $prompt .= "2. suggested_html: A brief, descriptive alt text (under 125 characters) that describes the image content and purpose.\n\n";
+        } else {
+            $prompt .= "2. suggested_html: Provide ONLY the fixed HTML element (not the entire document). Make it ready to replace the problematic element.\n\n";
+        }
 
         $prompt .= "Return ONLY valid JSON in this exact format:\n";
         $prompt .= '{"reasoning": "explanation here", "suggested_html": "fixed html here"}';
+
+        return $prompt;
+    }
+
+    /**
+     * Build a vision-specific prompt for analyzing images and generating alt text.
+     *
+     * Used when we have both the image and vision capabilities available.
+     * Focuses on describing the image content rather than the HTML structure.
+     *
+     * @param string $image_description Brief context about what this image is for.
+     * @return string The prompt for vision AI.
+     */
+    public function build_vision_alt_text_prompt(string $image_description = ''): string {
+        $prompt = "You are an accessibility expert. Look at this image and generate alt text for it.\n\n";
+
+        if (!empty($image_description)) {
+            $prompt .= "Context: " . $image_description . "\n\n";
+        }
+
+        $prompt .= "Your task:\n";
+        $prompt .= "1. reasoning: Explain WHY this image needs alt text from an ACCESSIBILITY perspective. Reference WCAG 2.1 Level A Success Criterion 1.1.1 (Non-text Content). Explain that screen reader users cannot see images and need text alternatives to understand the content. Do NOT describe what is in the image here - only explain the accessibility requirement.\n";
+        $prompt .= "2. suggested_html: Write ONLY the alt text description (plain text, no HTML tags, under 125 characters) that describes what is in the image.\n\n";
+
+        $prompt .= "CRITICAL RULES:\n";
+        $prompt .= "- reasoning must explain the ACCESSIBILITY requirement (WCAG, screen readers, etc.), NOT describe the image content\n";
+        $prompt .= "- suggested_html must contain ONLY plain text for the alt attribute value\n";
+        $prompt .= "- Do NOT include any HTML tags like <img>, <p>, or any other tags\n";
+        $prompt .= "- Do NOT include the full HTML document or any HTML code\n";
+        $prompt .= "- Do NOT start with \"image of\" or \"picture of\"\n";
+        $prompt .= "- Keep the description under 125 characters\n\n";
+
+        $prompt .= "Example of CORRECT response:\n";
+        $prompt .= '{"reasoning": "Images without alternative text violate WCAG 2.1 Success Criterion 1.1.1 (Non-text Content). Screen reader users cannot perceive visual content, so they rely on alt text to understand what an image conveys. Without alt text, this content is inaccessible to blind and visually impaired users.", "suggested_html": "Green forest with mountains in the background under blue sky"}' . "\n\n";
+
+        $prompt .= "Example of WRONG response (do NOT do this):\n";
+        $prompt .= '{"reasoning": "This image shows a beautiful forest scene with trees and mountains.", "suggested_html": "<img src=\'...\' alt=\'...\'>"}' . "\n\n";
+
+        $prompt .= "Return ONLY valid JSON with accessibility-focused reasoning and plain text alt description:";
 
         return $prompt;
     }
@@ -1207,87 +1308,20 @@ PROMPT;
      * @return array Suggestion with reasoning and suggested_html.
      */
     public function get_image_suggestion_with_vision(string $html, array $issue, string $imagebase64): array {
-        // Get Azure config.
-        $manager = \core\di::get(\core_ai\manager::class);
-        $provider_instances = $manager->get_provider_instances(['provider' => 'aiprovider_azureai\\provider']);
-        $provider_instance = reset($provider_instances);
+        // Build vision-specific prompt for alt text generation
+        $prompt = $this->build_vision_alt_text_prompt();
 
-        if (empty($provider_instance)) {
-            throw new \moodle_exception('azurenotconfigured', 'aiplacement_a11y');
+        // Call AI provider with vision capability
+        $response = $this->call_ai_provider_with_vision($prompt, $imagebase64);
+
+        // Parse JSON response
+        $suggestion = json_decode($response, true);
+        if ($suggestion === null || !isset($suggestion['reasoning']) || !isset($suggestion['suggested_html'])) {
+            // If not JSON, try to extract from text response
+            $suggestion = $this->parse_suggestion_from_text($response, '', $issue);
         }
 
-        $apikey = $provider_instance->config['apikey'] ?? '';
-        $endpoint = $provider_instance->config['endpoint'] ?? '';
-        $deployment = '';
-        $apiversion = '';
-
-        foreach ($provider_instance->actionconfig as $key => $action_config) {
-            if ($key == 'core_ai\aiactions\generate_text') {
-                $deployment = $provider_instance->actionconfig[$key]['settings']['deployment'] ?? '';
-                $apiversion = $provider_instance->actionconfig[$key]['settings']['apiversion'] ?? '2024-02-15-preview';
-                break;
-            }
-        }
-
-        if (empty($endpoint) || empty($apikey) || empty($deployment)) {
-            throw new \moodle_exception('azurenotconfigured', 'aiplacement_a11y');
-        }
-
-        $url = rtrim($endpoint, '/') . '/openai/deployments/' . $deployment . '/chat/completions?api-version=' . $apiversion;
-
-        $prompt = "Analyze this image and provide:\n";
-        $prompt .= "1. reasoning: Explain why images need alt text for accessibility (WCAG 2.1 Level A).\n";
-        $prompt .= "2. suggested_html: Describe this image in under 125 characters for alt text.\n\n";
-        $prompt .= "Return JSON: {\"reasoning\": \"...\", \"suggested_html\": \"description here\"}";
-
-        $payload = [
-            'messages' => [
-                [
-                    'role' => 'user',
-                    'content' => [
-                        ['type' => 'text', 'text' => $prompt],
-                        ['type' => 'image_url', 'image_url' => ['url' => $imagebase64]],
-                    ],
-                ],
-            ],
-            'max_tokens' => 300,
-        ];
-
-        $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            'Content-Type: application/json',
-            'api-key: ' . $apikey,
-        ]);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-
-        $response = curl_exec($ch);
-        $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        if ($response === false || $httpcode !== 200) {
-            throw new \moodle_exception('aierror', 'core_ai', '', 'Vision API error');
-        }
-
-        $responsedata = json_decode($response, true);
-        $content = trim($responsedata['choices'][0]['message']['content'] ?? '');
-
-        $suggestion = json_decode($content, true);
-        if ($suggestion === null) {
-            // Fallback: extract description from text.
-            $alttext = $content;
-            if (strlen($alttext) > 125) {
-                $alttext = substr($alttext, 0, 122) . '...';
-            }
-            $suggestion = [
-                'reasoning' => 'Images without alt text prevent screen reader users from understanding the image content. WCAG 2.1 Level A requires all images to have alternative text.',
-                'suggested_html' => $alttext,
-            ];
-        }
-
-        // Sanitize to ensure JSON doesn't bleed through.
+        // Sanitize to ensure JSON doesn't bleed through
         return $this->sanitize_suggestion($suggestion);
     }
 
@@ -1376,5 +1410,47 @@ PROMPT;
             'reasoning' => trim($reasoning),
             'suggested_html' => trim($suggested_html),
         ];
+    }
+
+    /**
+     * Sanitize alt text suggestion to ensure it contains only plain text.
+     *
+     * Specifically designed for image alt text suggestions to strip any HTML
+     * that the AI may have incorrectly returned.
+     *
+     * @param array $suggestion The suggestion array.
+     * @return array Sanitized suggestion with plain text alt text.
+     */
+    public function sanitize_alt_text_suggestion(array $suggestion): array {
+        // First apply standard sanitization.
+        $suggestion = $this->sanitize_suggestion($suggestion);
+
+        $suggested_html = $suggestion['suggested_html'] ?? '';
+
+        // If suggested_html contains HTML tags, strip them.
+        if (strpos($suggested_html, '<') !== false) {
+            // Strip all HTML tags to get plain text.
+            $suggested_html = strip_tags($suggested_html);
+            // Clean up whitespace.
+            $suggested_html = preg_replace('/\s+/', ' ', $suggested_html);
+            $suggested_html = trim($suggested_html);
+        }
+
+        // Ensure alt text is not too long.
+        if (strlen($suggested_html) > 125) {
+            $suggested_html = substr($suggested_html, 0, 122) . '...';
+        }
+
+        // Remove any "image of" or "picture of" prefixes.
+        $prefixes = ['image of ', 'picture of ', 'photo of ', 'an image of ', 'a picture of ', 'a photo of '];
+        foreach ($prefixes as $prefix) {
+            if (stripos($suggested_html, $prefix) === 0) {
+                $suggested_html = substr($suggested_html, strlen($prefix));
+                break;
+            }
+        }
+
+        $suggestion['suggested_html'] = trim($suggested_html);
+        return $suggestion;
     }
 }
