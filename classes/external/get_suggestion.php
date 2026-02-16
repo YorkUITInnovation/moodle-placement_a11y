@@ -134,6 +134,9 @@ class get_suggestion extends external_api {
                 }
             }
 
+            // Sanitize and validate the suggestion before returning.
+            $suggestion = $utils->sanitize_suggestion($suggestion);
+
             return [
                 'success' => true,
                 'reasoning' => $suggestion['reasoning'] ?? '',

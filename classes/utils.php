@@ -1287,7 +1287,8 @@ PROMPT;
             ];
         }
 
-        return $suggestion;
+        // Sanitize to ensure JSON doesn't bleed through.
+        return $this->sanitize_suggestion($suggestion);
     }
 
     /**
@@ -1311,6 +1312,69 @@ PROMPT;
         return [
             'reasoning' => $response,
             'suggested_html' => $html,
+        ];
+    }
+
+    /**
+     * Sanitize and validate a suggestion to prevent JSON bleed-through.
+     *
+     * Ensures that the suggested_html field contains actual HTML/text content
+     * and not JSON objects or other invalid data.
+     *
+     * @param array $suggestion The suggestion array with 'reasoning' and 'suggested_html' keys.
+     * @return array Sanitized suggestion.
+     */
+    public function sanitize_suggestion(array $suggestion): array {
+        // Ensure we have the required keys.
+        if (!isset($suggestion['reasoning'])) {
+            $suggestion['reasoning'] = '';
+        }
+        if (!isset($suggestion['suggested_html'])) {
+            $suggestion['suggested_html'] = '';
+        }
+
+        $reasoning = $suggestion['reasoning'];
+        $suggested_html = $suggestion['suggested_html'];
+
+        // Check if suggested_html is actually JSON (starts with { or [).
+        $trimmed = trim($suggested_html);
+        if ((strpos($trimmed, '{') === 0 || strpos($trimmed, '[') === 0)) {
+            // Try to parse as JSON.
+            $json_decoded = json_decode($trimmed, true);
+            if ($json_decoded !== null) {
+                // It's valid JSON - this is a problem. Try to extract useful content.
+                // First check if it has our expected structure.
+                if (is_array($json_decoded) && isset($json_decoded['suggested_html'])) {
+                    // JSON was nested - extract the inner content.
+                    $suggested_html = $this->sanitize_suggestion($json_decoded)['suggested_html'];
+                } else if (is_array($json_decoded) && isset($json_decoded['content'])) {
+                    // Try alternative JSON structure.
+                    $suggested_html = trim($json_decoded['content']);
+                } else if (is_array($json_decoded) && isset($json_decoded['text'])) {
+                    // Try text field.
+                    $suggested_html = trim($json_decoded['text']);
+                } else if (is_string($json_decoded)) {
+                    // It was a JSON string.
+                    $suggested_html = $json_decoded;
+                } else {
+                    // Can't extract meaningful content, return empty.
+                    $suggested_html = '';
+                }
+            }
+        }
+
+        // Also check if reasoning contains JSON when it shouldn't.
+        $reasoning_trimmed = trim($reasoning);
+        if ((strpos($reasoning_trimmed, '{') === 0 || strpos($reasoning_trimmed, '[') === 0)) {
+            $json_decoded = json_decode($reasoning_trimmed, true);
+            if ($json_decoded !== null && is_array($json_decoded) && isset($json_decoded['reasoning'])) {
+                $reasoning = $this->sanitize_suggestion($json_decoded)['reasoning'];
+            }
+        }
+
+        return [
+            'reasoning' => trim($reasoning),
+            'suggested_html' => trim($suggested_html),
         ];
     }
 }
