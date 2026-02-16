@@ -216,7 +216,7 @@ class utils {
                     'element' => 'img',
                     'src' => $src,
                     'severity' => 'high',
-                    'description' => "Image missing alt text",
+                    'description' => get_string('issue_missing_alt_text', 'aiplacement_a11y'),
                     'html_snippet' => $html_snippet,
                 ];
             }
@@ -237,7 +237,7 @@ class utils {
                     'href' => $href,
                     'current_text' => $text,
                     'severity' => 'high',
-                    'description' => "Link has weak or missing text",
+                    'description' => get_string('issue_weak_link_text', 'aiplacement_a11y'),
                     'html_snippet' => $html_snippet,
                 ];
             }
@@ -286,7 +286,7 @@ class utils {
                         'color' => $color,
                         'background' => $bgcolor,
                         'contrast_ratio' => round($contrast_ratio, 2),
-                        'description' => 'Insufficient color contrast',
+                        'description' => get_string('issue_contrast', 'aiplacement_a11y'),
                         'html_snippet' => $html_snippet,
                     ];
                 }
@@ -306,7 +306,7 @@ class utils {
                         'element' => 'input',
                         'id' => $id,
                         'severity' => 'high',
-                        'description' => "Form input missing label",
+                        'description' => get_string('issue_missing_form_label', 'aiplacement_a11y'),
                         'html_snippet' => $html_snippet,
                     ];
                 }
@@ -322,7 +322,7 @@ class utils {
                     'type' => 'table_missing_caption',
                     'element' => 'table',
                     'severity' => 'low',
-                    'description' => "Table missing caption",
+                    'description' => get_string('issue_table_missing_caption', 'aiplacement_a11y'),
                 ];
             }
         }
@@ -340,7 +340,7 @@ class utils {
                             'type' => 'table_merged_cells',
                             'element' => 'table',
                             'severity' => 'low',
-                            'description' => "Table has merged cells (colspan)",
+                            'description' => get_string('issue_table_merged_cells_colspan', 'aiplacement_a11y'),
                         ];
                         break 3; // Break out of all loops for this table
                     }
@@ -349,7 +349,7 @@ class utils {
                             'type' => 'table_merged_cells',
                             'element' => 'table',
                             'severity' => 'low',
-                            'description' => "Table has merged cells (rowspan)",
+                            'description' => get_string('issue_table_merged_cells_rowspan', 'aiplacement_a11y'),
                         ];
                         break 3; // Break out of all loops for this table
                     }
@@ -365,7 +365,7 @@ class utils {
                     'type' => 'table_missing_headers',
                     'element' => 'table',
                     'severity' => 'low',
-                    'description' => "Table missing proper header row (th elements)",
+                    'description' => get_string('issue_table_missing_headers', 'aiplacement_a11y'),
                 ];
             }
         }
@@ -388,7 +388,7 @@ class utils {
                         'type' => 'heading_too_long',
                         'element' => $tag_name,
                         'severity' => 'medium',
-                        'description' => "Heading contains over 1000 characters (found: " . strlen($content) . ")",
+                        'description' => get_string('issue_heading_too_long', 'aiplacement_a11y', strlen($content)),
                         'character_count' => strlen($content),
                         'html_snippet' => $html_snippet,
                     ];
@@ -402,7 +402,7 @@ class utils {
                             'type' => 'heading_hierarchy_issue',
                             'element' => $tag_name,
                             'severity' => 'medium',
-                            'description' => "Heading hierarchy broken: jumped from <h{$last_level}> to <h{$level}>",
+                            'description' => get_string('issue_heading_hierarchy_broken', 'aiplacement_a11y', (object)['from' => $last_level, 'to' => $level]),
                             'current_level' => $level,
                             'expected_max_level' => $last_level + 1,
                             'html_snippet' => $html_snippet,
@@ -421,7 +421,7 @@ class utils {
                         'type' => 'heading_hierarchy_issue',
                         'element' => $tag_name,
                         'severity' => 'high',
-                        'description' => "Content must start with <h3> as the first heading (h1 and h2 are not used)",
+                        'description' => get_string('issue_heading_must_start_h3', 'aiplacement_a11y'),
                         'current_level' => $level,
                         'expected_level' => 3,
                         'html_snippet' => $html_snippet,
@@ -451,7 +451,7 @@ class utils {
                             'type' => 'unheaded_content',
                             'element' => 'p/div',
                             'severity' => 'medium',
-                            'description' => "Found " . strlen($unheaded_text) . " characters of content without a heading to organize it. Content should be grouped under appropriate headings (h3, h4, h5, or h6).",
+                            'description' => get_string('issue_unheaded_content', 'aiplacement_a11y', strlen($unheaded_text)),
                             'character_count' => strlen($unheaded_text),
                             'html_snippet' => $dom->saveHTML($first_element),
                         ];
@@ -476,7 +476,7 @@ class utils {
                     'type' => 'unheaded_content',
                     'element' => 'p/div',
                     'severity' => 'medium',
-                    'description' => "Found " . strlen($unheaded_text) . " characters of content without a heading to organize it. Content should be grouped under appropriate headings (h3, h4, h5, or h6).",
+                    'description' => get_string('issue_unheaded_content', 'aiplacement_a11y', strlen($unheaded_text)),
                     'character_count' => strlen($unheaded_text),
                     'html_snippet' => $dom->saveHTML($first_element),
                 ];
@@ -907,10 +907,13 @@ PROMPT;
     public function generate_report(array $analysis, array $changes): string {
         global $OUTPUT;
 
-        // Add index to each issue for JavaScript tracking
+        // Add index and translated severity to each issue for template
         $issues_with_index = [];
         foreach ($analysis['issues'] as $index => $issue) {
             $issue['index'] = $index;
+            // Add translated severity text
+            $severity = $issue['severity'] ?? 'medium';
+            $issue['severity_text'] = get_string('severity_' . $severity, 'aiplacement_a11y');
             $issues_with_index[] = $issue;
         }
 

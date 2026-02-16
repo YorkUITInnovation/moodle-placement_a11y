@@ -138,6 +138,25 @@ $string['heading_too_long_desc'] = 'Les titres ne doivent pas dépasser 1000 car
 $string['unheaded_content'] = 'Contenu non organisé sans titres';
 $string['unheaded_content_desc'] = 'Le contenu doit être organisé en sections logiques à l\'aide de titres (h3, h4, h5, h6). Plusieurs paragraphes sans titres peuvent être déroutants pour les utilisateurs de lecteurs d\'écran et rendent le contenu plus difficile à naviguer et à comprendre.';
 
+// Chaînes de description des problèmes (utilisées dans analyze_accessibility_issues).
+$string['issue_missing_alt_text'] = 'Image sans texte alternatif';
+$string['issue_weak_link_text'] = 'Le lien a un texte faible ou manquant';
+$string['issue_contrast'] = 'Contraste de couleur insuffisant';
+$string['issue_missing_form_label'] = 'Champ de formulaire sans étiquette';
+$string['issue_table_missing_caption'] = 'Tableau sans légende';
+$string['issue_table_merged_cells_colspan'] = 'Le tableau a des cellules fusionnées (colspan)';
+$string['issue_table_merged_cells_rowspan'] = 'Le tableau a des cellules fusionnées (rowspan)';
+$string['issue_table_missing_headers'] = 'Tableau sans ligne d\'en-tête appropriée (éléments th)';
+$string['issue_heading_too_long'] = 'Le titre contient plus de 1000 caractères (trouvé : {$a})';
+$string['issue_heading_hierarchy_broken'] = 'Hiérarchie de titres brisée : saut de <h{$a->from}> à <h{$a->to}>';
+$string['issue_heading_must_start_h3'] = 'Le contenu doit commencer par <h3> comme premier titre (h1 et h2 ne sont pas utilisés)';
+$string['issue_unheaded_content'] = '{$a} caractères de contenu trouvés sans titre pour l\'organiser. Le contenu doit être regroupé sous des titres appropriés (h3, h4, h5 ou h6).';
+
+// Chaînes de sévérité.
+$string['severity_high'] = 'élevé';
+$string['severity_medium'] = 'moyen';
+$string['severity_low'] = 'faible';
+
 // Chaînes de confidentialité.
 $string['privacy:metadata:userid'] = 'L\'identifiant de l\'utilisateur demandant des corrections d\'accessibilité';
 $string['privacy:metadata:content'] = 'Le contenu HTML analysé pour les problèmes d\'accessibilité';

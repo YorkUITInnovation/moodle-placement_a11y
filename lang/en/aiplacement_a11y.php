@@ -138,6 +138,25 @@ $string['heading_too_long_desc'] = 'Headings should not exceed 1000 characters. 
 $string['unheaded_content'] = 'Unorganized content without headings';
 $string['unheaded_content_desc'] = 'Content should be organized into logical sections using headings (h3, h4, h5, h6). Multiple paragraphs without headings can be confusing for screen reader users and makes content harder to navigate and understand.';
 
+// Issue description strings (used in analyze_accessibility_issues).
+$string['issue_missing_alt_text'] = 'Image missing alt text';
+$string['issue_weak_link_text'] = 'Link has weak or missing text';
+$string['issue_contrast'] = 'Insufficient color contrast';
+$string['issue_missing_form_label'] = 'Form input missing label';
+$string['issue_table_missing_caption'] = 'Table missing caption';
+$string['issue_table_merged_cells_colspan'] = 'Table has merged cells (colspan)';
+$string['issue_table_merged_cells_rowspan'] = 'Table has merged cells (rowspan)';
+$string['issue_table_missing_headers'] = 'Table missing proper header row (th elements)';
+$string['issue_heading_too_long'] = 'Heading contains over 1000 characters (found: {$a})';
+$string['issue_heading_hierarchy_broken'] = 'Heading hierarchy broken: jumped from <h{$a->from}> to <h{$a->to}>';
+$string['issue_heading_must_start_h3'] = 'Content must start with <h3> as the first heading (h1 and h2 are not used)';
+$string['issue_unheaded_content'] = 'Found {$a} characters of content without a heading to organize it. Content should be grouped under appropriate headings (h3, h4, h5, or h6).';
+
+// Severity strings.
+$string['severity_high'] = 'high';
+$string['severity_medium'] = 'medium';
+$string['severity_low'] = 'low';
+
 // Privacy strings.
 $string['privacy:metadata:userid'] = 'The user ID of the person requesting accessibility fixes';
 $string['privacy:metadata:content'] = 'The HTML content being analyzed for accessibility issues';
