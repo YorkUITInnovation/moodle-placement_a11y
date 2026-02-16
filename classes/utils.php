@@ -66,6 +66,95 @@ class utils {
     }
 
     /**
+     * Get the current user's language code.
+     *
+     * @return string The language code (e.g., 'en', 'fr', 'es', 'de').
+     */
+    public function get_current_language_code(): string {
+        return current_language();
+    }
+
+    /**
+     * Get the human-readable language name for the current user's language.
+     *
+     * Converts language codes to full language names for use in AI prompts.
+     *
+     * @return string The language name (e.g., 'English', 'French', 'Spanish').
+     */
+    public function get_current_language_name(): string {
+        $langcode = $this->get_current_language_code();
+
+        // Map common language codes to full names.
+        $languages = [
+            'en' => 'English',
+            'en_us' => 'English',
+            'en_gb' => 'English',
+            'fr' => 'French',
+            'fr_ca' => 'French',
+            'es' => 'Spanish',
+            'es_mx' => 'Spanish',
+            'de' => 'German',
+            'it' => 'Italian',
+            'pt' => 'Portuguese',
+            'pt_br' => 'Portuguese',
+            'nl' => 'Dutch',
+            'ru' => 'Russian',
+            'zh_cn' => 'Chinese (Simplified)',
+            'zh_tw' => 'Chinese (Traditional)',
+            'ja' => 'Japanese',
+            'ko' => 'Korean',
+            'ar' => 'Arabic',
+            'he' => 'Hebrew',
+            'pl' => 'Polish',
+            'tr' => 'Turkish',
+            'sv' => 'Swedish',
+            'da' => 'Danish',
+            'no' => 'Norwegian',
+            'fi' => 'Finnish',
+            'cs' => 'Czech',
+            'el' => 'Greek',
+            'hu' => 'Hungarian',
+            'ro' => 'Romanian',
+            'uk' => 'Ukrainian',
+            'vi' => 'Vietnamese',
+            'th' => 'Thai',
+            'id' => 'Indonesian',
+            'ms' => 'Malay',
+            'hi' => 'Hindi',
+            'bn' => 'Bengali',
+            'ca' => 'Catalan',
+            'eu' => 'Basque',
+            'gl' => 'Galician',
+        ];
+
+        // Normalize the language code (lowercase, handle variants).
+        $langcode_lower = strtolower($langcode);
+
+        if (isset($languages[$langcode_lower])) {
+            return $languages[$langcode_lower];
+        }
+
+        // Try base language (e.g., 'fr' from 'fr_ca').
+        $base_lang = explode('_', $langcode_lower)[0];
+        if (isset($languages[$base_lang])) {
+            return $languages[$base_lang];
+        }
+
+        // Fallback to English if language not recognized.
+        return 'English';
+    }
+
+    /**
+     * Get the language instruction to add to AI prompts.
+     *
+     * @return string The instruction string (e.g., "Respond in French.")
+     */
+    public function get_language_instruction(): string {
+        $language = $this->get_current_language_name();
+        return "IMPORTANT: Respond in {$language}.\n\n";
+    }
+
+    /**
      * Check if HTML content is valid.
      *
      * @param string $html The HTML content to validate.
@@ -417,8 +506,13 @@ class utils {
             $issue_summary .= "- [{$issue['severity']}] {$issue['description']}\n";
         }
 
+        // Get language instruction for localized responses.
+        $language = $this->get_current_language_name();
+
         $prompt = <<<PROMPT
-You are an expert in web accessibility and WCAG AA compliance. 
+You are an expert in web accessibility and WCAG AA compliance.
+
+IMPORTANT: Any text content you generate (such as alt text, link text, table captions, or headings) must be in {$language}.
 
 I have HTML content that needs to be fixed to meet WCAG AA standards. Please analyze the following HTML and:
 
@@ -474,7 +568,11 @@ PROMPT;
      * @return string The prompt for AI.
      */
     public function build_single_issue_fix_prompt(string $html, string $issuetype, array $issue): string {
+        // Get language for localized responses.
+        $language = $this->get_current_language_name();
+
         $prompt = "You are an expert in web accessibility and WCAG AA compliance.\n\n";
+        $prompt .= "IMPORTANT: Any text content you generate must be in {$language}.\n\n";
 
         switch ($issuetype) {
             case 'missing_alt_text':
@@ -1233,7 +1331,11 @@ PROMPT;
      * @return string The prompt for AI.
      */
     public function build_suggestion_prompt(string $html, string $issuetype, array $issue): string {
+        // Get language for localized responses.
+        $language = $this->get_current_language_name();
+
         $prompt = "You are an accessibility expert. Analyze this accessibility issue and provide a detailed suggestion.\n\n";
+        $prompt .= "IMPORTANT: Your response (both reasoning and suggested fix) must be in {$language}.\n\n";
 
         // For image alt text, don't include the full HTML - just the image element
         if ($issuetype === 'missing_alt_text') {
@@ -1246,12 +1348,12 @@ PROMPT;
         $prompt .= "Issue Details: " . json_encode($issue) . "\n\n";
 
         $prompt .= "Provide your response in JSON format with these keys:\n";
-        $prompt .= "1. reasoning: Explain WHY this is an accessibility problem. Reference WCAG 2.1 guidelines and explain the impact on users with disabilities.\n";
+        $prompt .= "1. reasoning: Explain WHY this is an accessibility problem. Reference WCAG 2.1 guidelines and explain the impact on users with disabilities. Write in {$language}.\n";
 
         if ($issuetype === 'missing_alt_text') {
-            $prompt .= "2. suggested_html: A brief, descriptive alt text (under 125 characters) that describes the image content and purpose.\n\n";
+            $prompt .= "2. suggested_html: A brief, descriptive alt text (under 125 characters) that describes the image content and purpose. Write in {$language}.\n\n";
         } else {
-            $prompt .= "2. suggested_html: Provide ONLY the fixed HTML element (not the entire document). Make it ready to replace the problematic element.\n\n";
+            $prompt .= "2. suggested_html: Provide ONLY the fixed HTML element (not the entire document). Make it ready to replace the problematic element. Any text content must be in {$language}.\n\n";
         }
 
         $prompt .= "Return ONLY valid JSON in this exact format:\n";
@@ -1270,17 +1372,22 @@ PROMPT;
      * @return string The prompt for vision AI.
      */
     public function build_vision_alt_text_prompt(string $image_description = ''): string {
+        // Get language for localized responses.
+        $language = $this->get_current_language_name();
+
         $prompt = "You are an accessibility expert. Look at this image and generate alt text for it.\n\n";
+        $prompt .= "IMPORTANT: Your response (both reasoning and suggested alt text) must be in {$language}.\n\n";
 
         if (!empty($image_description)) {
             $prompt .= "Context: " . $image_description . "\n\n";
         }
 
         $prompt .= "Your task:\n";
-        $prompt .= "1. reasoning: Explain WHY this image needs alt text from an ACCESSIBILITY perspective. Reference WCAG 2.1 Level A Success Criterion 1.1.1 (Non-text Content). Explain that screen reader users cannot see images and need text alternatives to understand the content. Do NOT describe what is in the image here - only explain the accessibility requirement.\n";
-        $prompt .= "2. suggested_html: Write ONLY the alt text description (plain text, no HTML tags, under 125 characters) that describes what is in the image.\n\n";
+        $prompt .= "1. reasoning: Explain WHY this image needs alt text from an ACCESSIBILITY perspective. Reference WCAG 2.1 Level A Success Criterion 1.1.1 (Non-text Content). Explain that screen reader users cannot see images and need text alternatives to understand the content. Do NOT describe what is in the image here - only explain the accessibility requirement. Write in {$language}.\n";
+        $prompt .= "2. suggested_html: Write ONLY the alt text description (plain text, no HTML tags, under 125 characters) that describes what is in the image. Write in {$language}.\n\n";
 
         $prompt .= "CRITICAL RULES:\n";
+        $prompt .= "- ALL text in your response must be in {$language}\n";
         $prompt .= "- reasoning must explain the ACCESSIBILITY requirement (WCAG, screen readers, etc.), NOT describe the image content\n";
         $prompt .= "- suggested_html must contain ONLY plain text for the alt attribute value\n";
         $prompt .= "- Do NOT include any HTML tags like <img>, <p>, or any other tags\n";
@@ -1294,7 +1401,7 @@ PROMPT;
         $prompt .= "Example of WRONG response (do NOT do this):\n";
         $prompt .= '{"reasoning": "This image shows a beautiful forest scene with trees and mountains.", "suggested_html": "<img src=\'...\' alt=\'...\'>"}' . "\n\n";
 
-        $prompt .= "Return ONLY valid JSON with accessibility-focused reasoning and plain text alt description:";
+        $prompt .= "Return ONLY valid JSON with accessibility-focused reasoning and plain text alt description in {$language}:";
 
         return $prompt;
     }
