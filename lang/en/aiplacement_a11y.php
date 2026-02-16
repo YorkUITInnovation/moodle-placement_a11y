@@ -150,6 +150,7 @@ $string['issue_table_missing_headers'] = 'Table missing proper header row (th el
 $string['issue_heading_too_long'] = 'Heading contains over 1000 characters (found: {$a})';
 $string['issue_heading_hierarchy_broken'] = 'Heading hierarchy broken: jumped from <h{$a->from}> to <h{$a->to}>';
 $string['issue_heading_must_start_h3'] = 'Content must start with <h3> as the first heading (h1 and h2 are not used)';
+$string['issue_needs_headings'] = 'Document has {$a} characters but no headings. Content should be organized with headings (h3, h4, h5, or h6) for better structure and accessibility.';
 $string['issue_unheaded_content'] = 'Found {$a} characters of content without a heading to organize it. Content should be grouped under appropriate headings (h3, h4, h5, or h6).';
 
 // Severity strings.

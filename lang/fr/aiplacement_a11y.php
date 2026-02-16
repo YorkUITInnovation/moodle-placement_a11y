@@ -150,6 +150,7 @@ $string['issue_table_missing_headers'] = 'Tableau sans ligne d\'en-tête appropr
 $string['issue_heading_too_long'] = 'Le titre contient plus de 1000 caractères (trouvé : {$a})';
 $string['issue_heading_hierarchy_broken'] = 'Hiérarchie de titres brisée : saut de <h{$a->from}> à <h{$a->to}>';
 $string['issue_heading_must_start_h3'] = 'Le contenu doit commencer par <h3> comme premier titre (h1 et h2 ne sont pas utilisés)';
+$string['issue_needs_headings'] = 'Le document contient {$a} caractères mais aucun titre. Le contenu doit être organisé avec des titres (h3, h4, h5 ou h6) pour une meilleure structure et accessibilité.';
 $string['issue_unheaded_content'] = '{$a} caractères de contenu trouvés sans titre pour l\'organiser. Le contenu doit être regroupé sous des titres appropriés (h3, h4, h5 ou h6).';
 
 // Chaînes de sévérité.

@@ -432,53 +432,28 @@ class utils {
         }
 
         // Check for unorganized content - paragraphs and other content without headings.
-        // Get all heading and paragraph/div elements in document order.
-        $all_content = $xpath->query('//h3 | //h4 | //h5 | //h6 | //p[not(ancestor::table)] | //div[not(ancestor::table)]');
+        // Simple check: if document has 1000+ text characters and NO headings, flag it.
+        $headings = $xpath->query('//h3 | //h4 | //h5 | //h6');
 
-        if ($all_content->length > 0) {
-            $unheaded_text = '';
-            $unheaded_elements = [];
+        if ($headings->length === 0) {
+            // No headings found - check total text content length.
+            $body = $xpath->query('//body');
+            $total_text = '';
 
-            foreach ($all_content as $element) {
-                $tag_name = $element->nodeName;
-
-                // If we encounter a heading, we've organized our content so far.
-                if (in_array($tag_name, ['h3', 'h4', 'h5', 'h6'])) {
-                    // If we have accumulated unheaded content, report it.
-                    if (strlen($unheaded_text) > 500 && count($unheaded_elements) > 0) {
-                        $first_element = $unheaded_elements[0];
-                        $issues[] = [
-                            'type' => 'unheaded_content',
-                            'element' => 'p/div',
-                            'severity' => 'medium',
-                            'description' => get_string('issue_unheaded_content', 'aiplacement_a11y', strlen($unheaded_text)),
-                            'character_count' => strlen($unheaded_text),
-                            'html_snippet' => $dom->saveHTML($first_element),
-                        ];
-                    }
-                    // Reset for next section.
-                    $unheaded_text = '';
-                    $unheaded_elements = [];
-                } else {
-                    // This is a p or div - add to unheaded content.
-                    $text = trim($element->textContent);
-                    if (!empty($text)) {
-                        $unheaded_text .= $text . "\n";
-                        $unheaded_elements[] = $element;
-                    }
-                }
+            if ($body->length > 0) {
+                $total_text = trim($body->item(0)->textContent);
+            } else {
+                // No body tag, get text from entire document.
+                $total_text = trim($dom->textContent);
             }
 
-            // Check if there's unheaded content at the end of the document.
-            if (strlen($unheaded_text) > 500 && count($unheaded_elements) > 0) {
-                $first_element = $unheaded_elements[0];
+            if (strlen($total_text) > 1000) {
                 $issues[] = [
                     'type' => 'unheaded_content',
-                    'element' => 'p/div',
-                    'severity' => 'medium',
-                    'description' => get_string('issue_unheaded_content', 'aiplacement_a11y', strlen($unheaded_text)),
-                    'character_count' => strlen($unheaded_text),
-                    'html_snippet' => $dom->saveHTML($first_element),
+                    'element' => 'document',
+                    'severity' => 'low',
+                    'description' => get_string('issue_needs_headings', 'aiplacement_a11y', strlen($total_text)),
+                    'character_count' => strlen($total_text),
                 ];
             }
         }
@@ -532,7 +507,7 @@ I have HTML content that needs to be fixed to meet WCAG AA standards. Please ana
 6. Add captions to tables that are missing them
 7. Restructure tables with merged cells to use proper header associations
 8. Add proper header elements (th) to tables missing proper headers
-9. Organize any unheaded content blocks by adding appropriate h3, h4, h5, or h6 headings to group related paragraphs
+9. If content has NO headings and is over 1000 characters, add a descriptive <h3> heading at the beginning
 
 {$issue_summary}
 
@@ -547,7 +522,7 @@ IMPORTANT REQUIREMENTS:
 - For contrast: Always maximize contrast using proven high-contrast combinations. Aim for 7:1+ ratio (WCAG AAA), not just 4.5:1 minimum
 - For tables: add caption elements, use proper semantic structure with <thead> for header rows, <tbody> for data rows, use th for headers with scope attributes, avoid merged cells
 - For headings: ensure proper hierarchy starting with h3, no level skipping, keep text under 1000 characters
-- For unheaded content: add descriptive h3/h4/h5/h6 headings to organize content into logical sections. Do NOT remove paragraphs, only ADD headings.
+- For documents with no headings: add ONE descriptive <h3> heading at the beginning if content is over 1000 characters
 - Preserve all existing functionality
 
 HTML content to fix:
@@ -683,21 +658,18 @@ PROMPT;
                 break;
 
             case 'unheaded_content':
-                $prompt .= "Fix the following issue: Content without proper heading organization.\n\n";
-                $prompt .= "Problem: Found " . $issue['character_count'] . " characters of content without a heading to organize it.\n";
-                $prompt .= "Location: {$issue['html_snippet']}\n\n";
-                $prompt .= "IMPORTANT: You MUST add appropriate <h3>, <h4>, <h5>, or <h6> headings to organize this content into logical sections.\n";
+                $prompt .= "Fix the following issue: Content needs headings for organization.\n\n";
+                $prompt .= "Problem: Document has " . $issue['character_count'] . " characters but NO headings.\n\n";
+                $prompt .= "IMPORTANT: Add an appropriate <h3> heading at the beginning of the content.\n";
                 $prompt .= "Guidelines:\n";
-                $prompt .= "- Group related paragraphs under descriptive headings\n";
-                $prompt .= "- Use h3 for major sections, h4 for subsections, etc.\n";
-                $prompt .= "- Maintain proper heading hierarchy (no level skipping)\n";
-                $prompt .= "- Each heading should describe the content that follows it\n";
-                $prompt .= "- Do NOT remove any content, only ADD headings to organize it\n\n";
-                $prompt .= "Example structure:\n";
-                $prompt .= "<h3>Main Topic</h3>\n";
-                $prompt .= "<p>Content about the main topic...</p>\n";
-                $prompt .= "<h4>Subtopic</h4>\n";
-                $prompt .= "<p>Content about the subtopic...</p>\n";
+                $prompt .= "- Add ONE <h3> heading at the start that describes the overall content\n";
+                $prompt .= "- Make the heading descriptive and meaningful\n";
+                $prompt .= "- Keep it concise (under 100 characters)\n";
+                $prompt .= "- Do NOT remove or change any existing content\n";
+                $prompt .= "- ONLY add the heading element\n\n";
+                $prompt .= "Example:\n";
+                $prompt .= "<h3>Course Overview</h3>\n";
+                $prompt .= "<p>Existing content...</p>\n";
                 break;
 
             default:
