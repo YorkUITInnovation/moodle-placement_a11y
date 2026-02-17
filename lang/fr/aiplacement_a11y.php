@@ -163,3 +163,7 @@ $string['privacy:metadata:userid'] = 'L\'identifiant de l\'utilisateur demandant
 $string['privacy:metadata:content'] = 'Le contenu HTML analysé pour les problèmes d\'accessibilité';
 $string['privacy:metadata:aiprovider'] = 'Le contenu est envoyé au fournisseur d\'IA configuré pour traitement';
 
+// Chaînes de clause de non-responsabilité IA.
+$string['aidisclaimer'] = 'Clause de non-responsabilité IA';
+$string['aidisclaimer_text'] = 'Ce contenu sera analysé et corrigé à l\'aide de l\'intelligence artificielle. L\'IA peut commettre des erreurs et générer un code incorrect. Révisez et vérifiez toujours les modifications suggérées avant de les accepter.';
+

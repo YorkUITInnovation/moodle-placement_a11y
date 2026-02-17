@@ -163,4 +163,8 @@ $string['privacy:metadata:userid'] = 'The user ID of the person requesting acces
 $string['privacy:metadata:content'] = 'The HTML content being analyzed for accessibility issues';
 $string['privacy:metadata:aiprovider'] = 'Content is sent to the configured AI provider for processing';
 
+// AI disclaimer strings.
+$string['aidisclaimer'] = 'AI Disclaimer';
+$string['aidisclaimer_text'] = 'The content will be analyzed and fixed using artificial intelligence. AI can make mistakes and generate incorrect code. Always review and verify the suggested changes before accepting them.';
+
 
