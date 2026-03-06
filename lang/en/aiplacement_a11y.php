@@ -29,6 +29,9 @@ defined('MOODLE_INTERNAL') || die();
 $string['pluginname'] = 'Accessibility Fixer';
 $string['plugindescription'] = 'AI-powered tool to fix WCAG AA accessibility issues in HTML content';
 
+// Capability strings.
+$string['a11y:use'] = 'Use AI accessibility fixer';
+
 // Admin settings strings.
 $string['howitworks'] = 'How It Works';
 $string['howitworks_desc'] = 'The Accessibility Fixer integrates directly into the HTML editor and provides a "Fix Accessibility" button. When clicked, it analyzes the content for WCAG AA compliance issues and uses the configured AI provider (typically OpenAI) to suggest fixes for:
