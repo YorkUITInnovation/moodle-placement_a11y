@@ -60,7 +60,7 @@ class utils_test extends \advanced_testcase {
 
         $analysis = $utils->analyze_accessibility_issues($html);
 
-        $this->assertGreater(count($analysis['issues']), 0);
+        $this->assertGreaterThan(0, count($analysis['issues']));
         $this->assertTrue(
             in_array('missing_alt_text', array_column($analysis['issues'], 'type'))
         );
@@ -75,7 +75,7 @@ class utils_test extends \advanced_testcase {
 
         $analysis = $utils->analyze_accessibility_issues($html);
 
-        $this->assertGreater(count($analysis['issues']), 0);
+        $this->assertGreaterThan(0, count($analysis['issues']));
         $this->assertTrue(
             in_array('weak_link_text', array_column($analysis['issues'], 'type'))
         );
