@@ -60,7 +60,7 @@ class utils_test extends \advanced_testcase {
 
         $analysis = $utils->analyze_accessibility_issues($html);
 
-        $this->assertGreater(count($analysis['issues']), 0);
+        $this->assertGreaterThan(0, count($analysis['issues']));
         $this->assertTrue(
             in_array('missing_alt_text', array_column($analysis['issues'], 'type'))
         );
@@ -75,23 +75,23 @@ class utils_test extends \advanced_testcase {
 
         $analysis = $utils->analyze_accessibility_issues($html);
 
-        $this->assertGreater(count($analysis['issues']), 0);
+        $this->assertGreaterThan(0, count($analysis['issues']));
         $this->assertTrue(
             in_array('weak_link_text', array_column($analysis['issues'], 'type'))
         );
     }
 
     /**
-     * Test accessibility analysis for missing H1.
+     * Test accessibility analysis for incorrect starting heading level.
      */
-    public function test_analyze_missing_h1(): void {
+    public function test_analyze_heading_must_start_h3(): void {
         $utils = new \aiplacement_a11y\utils();
-        $html = '<p>Some content</p>';
+        $html = '<h4>Subsection</h4>';
 
         $analysis = $utils->analyze_accessibility_issues($html);
 
         $this->assertTrue(
-            in_array('missing_h1', array_column($analysis['issues'], 'type'))
+            in_array('heading_hierarchy_issue', array_column($analysis['issues'], 'type'))
         );
     }
 
